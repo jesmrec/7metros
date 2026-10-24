@@ -1,32 +1,35 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  7metros is a greenfield Android app that shows live handball scores,
+  focused on Spanish competitions. Scores and standings are the current
+  MVP features; more will be added incrementally.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Data comes from web scraping multiple free/open sources — the
+  architecture must support plugging in new sources without touching
+  unrelated modules.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  The project is multi-module, following a layered architecture
+  (presentation + ViewModels, use cases, repositories, data sources,
+  network...). Module boundaries are decided per-feature, not fixed
+  up front — keep proposals aligned with CLAUDE.md's module breakdown
+  as it evolves.
+
+  Testing: presentation layer uses instrumented UI tests; all other
+  layers use unit tests. CI must pass both before a change is applied.
+
+rules:
+  proposal:
+    - "Every new feature or data source must state which module(s) it touches and its single responsibility within the layered architecture."
+    - "Specs for UI-facing changes must describe expected states (loading, data, empty, error) so instrumented tests can be derived from them."
+  tasks:
+    - "Task breakdown must separate unit-test tasks (non-presentation layers) from instrumented-UI-test tasks (presentation layer)."
+  spec:
+    - "Scenarios involving scraped data must note which source is targeted and what happens if that source fails or changes format."
+
+operations:
+  apply:
+    - "Follow the existing module's layer conventions; don't introduce a new architectural pattern without a prior proposal."
+    - "New scraping sources should be isolated behind the existing data-source abstraction, not hardcoded into repositories or use cases."
+  archive:
+    - "Confirm CI (unit + instrumented tests) passed before merging the delta into the living spec."
