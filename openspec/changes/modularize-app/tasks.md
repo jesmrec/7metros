@@ -7,7 +7,7 @@
 
 ## 2. Version catalog and root build
 
-- [ ] 2.1 Add the `android-library` (`com.android.library`, `agp`) and `kotlin-jvm` (`org.jetbrains.kotlin.jvm`, `kotlin`) plugin aliases to `gradle/libs.versions.toml`, and declare both `apply false` in the root `build.gradle.kts`; verify Gradle sync and `./gradlew help` succeed with no KGP version-mismatch warnings
+- [x] 2.1 Add the `android-library` (`com.android.library`, `agp`) and `kotlin-jvm` (`org.jetbrains.kotlin.jvm`, `kotlin`) plugin aliases to `gradle/libs.versions.toml`, and declare both `apply false` in the root `build.gradle.kts`; verify Gradle sync and `./gradlew help` succeed with no KGP version-mismatch warnings
 
 ## 3. Create the library modules (structure only, no code)
 
