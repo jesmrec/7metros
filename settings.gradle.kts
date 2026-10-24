@@ -23,4 +23,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "7metros"
-include(":app")
+include(":7metros")
