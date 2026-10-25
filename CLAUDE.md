@@ -67,11 +67,36 @@ type of information (scores, standings, etc.), not tied to a single provider.
   unit tests.
 - All tests run in CI on every change.
 
+## Static Analysis
+
+- [detekt](https://detekt.dev/) is the project's static analyzer. It's
+  applied from the root `build.gradle.kts` to every module via a
+  `subprojects {}` block — a new module gets it automatically, no
+  per-module setup needed.
+- Shared ruleset: `config/detekt/detekt.yml` (built on detekt's defaults
+  via `buildUponDefaultConfig = true`, so it only lists what diverges from
+  them). Documented exceptions: `MagicNumber` excluded for
+  `7metros-presentation` (Compose layout literals like `16.dp`/`0.7f`
+  aren't bugs), and `FunctionNaming` ignores `@Composable` functions
+  (detekt's default naming rule otherwise contradicts the mandatory
+  PascalCase convention for composables).
+- Zero-tolerance: any finding — warning or error — fails the build.
+  `ignoreFailures` stays at Gradle's default (`false`), there is no
+  baseline file, and `check` depends on `detekt`. `./gradlew detekt` /
+  `./gradlew check` must pass with zero findings before code is accepted.
+- The Gradle daemon JVM is pinned to 17 in
+  `gradle/gradle-daemon-jvm.properties` — detekt's analysis engine does
+  not run under newer JDKs (confirmed empirically against JDK 25). This is
+  independent of the project's own Java 11 source/target compatibility and
+  applies to every contributor's and CI's Gradle daemon, not just one
+  machine.
+
 ## CI
 
 - Tests (unit + instrumented) run automatically in CI.
-- CI should also cover build correctness and, ideally, lint/static analysis
-  as the project matures.
+- CI should also cover build correctness and static analysis (detekt,
+  already wired locally via `./gradlew check`) as the project sets up its
+  first CI pipeline.
 
 ## Conventions
 

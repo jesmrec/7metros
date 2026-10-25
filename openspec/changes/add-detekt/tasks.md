@@ -18,7 +18,7 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Update CLAUDE.md to state that detekt is the project's static analyzer, that `./gradlew detekt` / `./gradlew check` must pass with zero findings before code is accepted, and where the shared ruleset lives (`config/detekt/detekt.yml`); verify the new text matches the actual Gradle wiring (plugin applied from root, zero-tolerance, no baseline)
+- [x] 4.1 Update CLAUDE.md to state that detekt is the project's static analyzer, that `./gradlew detekt` / `./gradlew check` must pass with zero findings before code is accepted, and where the shared ruleset lives (`config/detekt/detekt.yml`); verify the new text matches the actual Gradle wiring (plugin applied from root, zero-tolerance, no baseline)
 
 ## Workflow follow-up
 
