@@ -4,3 +4,7 @@ build:
 style:
   MagicNumber:
     excludes: ['**/7metros-presentation/**']
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']

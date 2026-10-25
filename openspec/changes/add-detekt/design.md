@@ -191,9 +191,27 @@ specific rules on top of `buildUponDefaultConfig`:
     IDE/`ktlint` formatting conventions informally. Rejected — "no
     warnings accepted" should include style drift, not just logic smells,
     and detekt already bundles this rule set.
-- No rule set is disabled outright; defaults are kept for naming,
-  exceptions, and potential-bugs since nothing about this project
-  contradicts them.
+- **`naming>FunctionNaming`**: `ignoreAnnotated: ['Composable']` added
+  project-wide (not scoped to `7metros-presentation` like `MagicNumber`,
+  since any module could in principle host a `@Composable` function).
+  *Empirical finding (task 3.2):* detekt's default `FunctionNaming` rule
+  requires `[a-z][a-zA-Z0-9]*`, which every `@Composable` function violates
+  by Kotlin/Compose convention (composables are PascalCase, since they're
+  invoked like UI elements — `MainScreen()`, not `mainScreen()`). This
+  wasn't anticipated when this decision was first written ("defaults are
+  kept for naming ... since nothing about this project contradicts them"),
+  but it does contradict a mandatory ecosystem convention, not an
+  arbitrary style choice. Renaming composables to satisfy the rule would
+  produce non-idiomatic code every Android/Compose contributor and tool
+  would flag; this `ignoreAnnotated` exception is the standard, widely-used
+  detekt configuration for Compose projects (and lighter-weight than
+  adopting the `compose-rules` plugin rejected in the Non-Goals above).
+  - *Alternative considered:* rename all composables to lowerCamelCase.
+    Rejected — breaks a universal, tool-reinforced convention for a
+    cosmetic rule-compliance win.
+- No other rule set is disabled outright; defaults are kept for the
+  remaining naming sub-rules, exceptions, and potential-bugs since nothing
+  about this project contradicts them.
 
 ### 4. Enforcement mechanism: Gradle's `ignoreFailures`, not just config
 
@@ -236,6 +254,14 @@ there is no path to a passing build with an outstanding finding.
 - [No CI pipeline enforces this yet, so the gate only works if a
   contributor remembers to run Gradle locally] → Accepted for this change
   per explicit user direction; tracked as future work, not solved here.
+- **Empirical clarification (task 3.3)**: `./gradlew check` never runs
+  instrumented tests (`connectedAndroidTest`) regardless of this change —
+  AGP wires those into a separate `connectedCheck` task that needs a
+  running device/emulator, not into `check`. Confirmed `./gradlew check`
+  passes end-to-end (detekt + unit tests + lint, all six modules); treating
+  that as satisfying task 3.3's intent, since wiring instrumented tests
+  into the normal build lifecycle is a pre-existing, separate concern this
+  detekt change doesn't touch.
 
 ## Migration Plan
 

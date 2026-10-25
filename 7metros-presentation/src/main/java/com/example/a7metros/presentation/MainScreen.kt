@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -24,15 +25,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private enum class BottomBarTab(val label: String) {
@@ -49,65 +51,15 @@ fun MainScreen() {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                Text(
-                    text = "7metros",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(16.dp),
-                )
-                HorizontalDivider()
-            }
-        },
+        drawerContent = { MainScreenDrawerContent() },
     ) {
         Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text("7metros") },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                )
-            },
+            topBar = { MainScreenTopBar(drawerState = drawerState, scope = scope) },
             bottomBar = {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    BottomBarTab.entries.forEach { tab ->
-                        NavigationBarItem(
-                            selected = tab == selectedTab,
-                            onClick = { selectedTab = tab },
-                            icon = {
-                                Icon(
-                                    imageVector = when (tab) {
-                                        BottomBarTab.Resultados -> Icons.AutoMirrored.Filled.List
-                                        BottomBarTab.Clasificacion -> Icons.Filled.Star
-                                    },
-                                    contentDescription = tab.label,
-                                )
-                            },
-                            label = { Text(tab.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                                selectedTextColor = MaterialTheme.colorScheme.onPrimary,
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                unselectedIconColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                                unselectedTextColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                            ),
-                        )
-                    }
-                }
+                MainScreenBottomBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it },
+                )
             },
         ) { innerPadding ->
             Surface(
@@ -115,6 +67,71 @@ fun MainScreen() {
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {}
+        }
+    }
+}
+
+@Composable
+private fun MainScreenDrawerContent() {
+    ModalDrawerSheet {
+        Text(
+            text = "7metros",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(16.dp),
+        )
+        HorizontalDivider()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainScreenTopBar(drawerState: DrawerState, scope: CoroutineScope) {
+    CenterAlignedTopAppBar(
+        title = { Text("7metros") },
+        navigationIcon = {
+            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    )
+}
+
+@Composable
+private fun MainScreenBottomBar(selectedTab: BottomBarTab, onTabSelected: (BottomBarTab) -> Unit) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.primary,
+    ) {
+        BottomBarTab.entries.forEach { tab ->
+            NavigationBarItem(
+                selected = tab == selectedTab,
+                onClick = { onTabSelected(tab) },
+                icon = {
+                    Icon(
+                        imageVector = when (tab) {
+                            BottomBarTab.Resultados -> Icons.AutoMirrored.Filled.List
+                            BottomBarTab.Clasificacion -> Icons.Filled.Star
+                        },
+                        contentDescription = tab.label,
+                    )
+                },
+                label = { Text(tab.label) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                    selectedTextColor = MaterialTheme.colorScheme.onPrimary,
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    unselectedIconColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                    unselectedTextColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                ),
+            )
         }
     }
 }
