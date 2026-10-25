@@ -25,16 +25,16 @@
 
 ## 5. Verify unchanged behavior (non-presentation layers: unit tests)
 
-- [ ] 5.1 Run `./gradlew test`; verify it passes, including the existing `ExampleUnitTest` in `7metros` (the new JVM modules have no sources yet and report NO-SOURCE)
+- [x] 5.1 Run `./gradlew test`; verify it passes, including the existing `ExampleUnitTest` in `7metros` (the new JVM modules have no sources yet and report NO-SOURCE)
 
 ## 6. Verify unchanged behavior (presentation layer: instrumented UI tests)
 
-- [ ] 6.1 Run `./gradlew connectedAndroidTest` on an emulator or device; verify the existing `ExampleInstrumentedTest` passes (the package name is still `com.example.a7metros`)
-- [ ] 6.2 Install the debug APK over the previous build and check by hand that the splash, top bar, drawer and bottom bar (Resultados / Clasificación) look and behave the same as before
+- [x] 6.1 Run `./gradlew connectedAndroidTest` on an emulator or device; verify the existing `ExampleInstrumentedTest` passes (the package name is still `com.example.a7metros`)
+- [x] 6.2 Install the debug APK over the previous build and check by hand that the splash, top bar, drawer and bottom bar (Resultados / Clasificación) look and behave the same as before
 
 ## 7. Documentation
 
-- [ ] 7.1 Update the CLAUDE.md "Architecture" section with the six modules, each one's single responsibility, the allowed dependency directions, the naming convention (`7metros-<layer>`, package `com.example.a7metros.<layer>`) and the JVM-vs-Android plugin rule; verify every module in `settings.gradle.kts` appears in CLAUDE.md and vice versa
+- [x] 7.1 Update the CLAUDE.md "Architecture" section with the six modules, each one's single responsibility, the allowed dependency directions, the naming convention (`7metros-<layer>`, package `com.example.a7metros.<layer>`) and the JVM-vs-Android plugin rule; verify every module in `settings.gradle.kts` appears in CLAUDE.md and vice versa
 
 ## Workflow follow-up
 
