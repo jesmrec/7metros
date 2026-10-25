@@ -5,8 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.example.a7metros.ui.MainScreen
-import com.example.a7metros.ui.theme._7metrosTheme
+import com.example.a7metros.presentation.MainScreen
+import com.example.a7metros.presentation.theme._7metrosTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

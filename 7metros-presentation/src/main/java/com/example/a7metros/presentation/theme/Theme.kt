@@ -1,4 +1,4 @@
-package com.example.a7metros.ui.theme
+package com.example.a7metros.presentation.theme
 
 import android.app.Activity
 import android.os.Build

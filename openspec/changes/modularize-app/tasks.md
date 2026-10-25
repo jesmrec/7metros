@@ -19,9 +19,9 @@
 
 ## 4. Wire the app module and move the existing UI
 
-- [ ] 4.1 Add `implementation(project(...))` to `7metros/build.gradle.kts` for all five library modules; verify `./gradlew :7metros:dependencies --configuration debugRuntimeClasspath` shows all five
-- [ ] 4.2 Use `git mv` to move `ui/MainScreen.kt` to `7metros-presentation/src/main/java/com/example/a7metros/presentation/MainScreen.kt` and `ui/theme/*` to `…/presentation/theme/`, change only their `package` lines, and move the Compose UI dependencies (material3, material-icons-core, ui, ui-graphics, ui-tooling-preview, debug ui-tooling) to the presentation module; verify `./gradlew :7metros-presentation:assembleDebug` succeeds
-- [ ] 4.3 Update the `MainActivity.kt` imports to `com.example.a7metros.presentation.MainScreen` and `…presentation.theme._7metrosTheme`, and drop any app-module dependencies that no longer have a user; verify `./gradlew assembleDebug` succeeds and `7metros/src/main/java` contains only `MainActivity.kt`
+- [x] 4.1 Add `implementation(project(...))` to `7metros/build.gradle.kts` for all five library modules; verify `./gradlew :7metros:dependencies --configuration debugRuntimeClasspath` shows all five
+- [x] 4.2 Use `git mv` to move `ui/MainScreen.kt` to `7metros-presentation/src/main/java/com/example/a7metros/presentation/MainScreen.kt` and `ui/theme/*` to `…/presentation/theme/`, change only their `package` lines, and move the Compose UI dependencies (material3, material-icons-core, ui, ui-graphics, ui-tooling-preview, debug ui-tooling) to the presentation module; verify `./gradlew :7metros-presentation:assembleDebug` succeeds
+- [x] 4.3 Update the `MainActivity.kt` imports to `com.example.a7metros.presentation.MainScreen` and `…presentation.theme._7metrosTheme`, and drop any app-module dependencies that no longer have a user; verify `./gradlew assembleDebug` succeeds and `7metros/src/main/java` contains only `MainActivity.kt`
 
 ## 5. Verify unchanged behavior (non-presentation layers: unit tests)
 

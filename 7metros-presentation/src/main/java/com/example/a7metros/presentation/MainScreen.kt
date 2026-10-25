@@ -1,4 +1,4 @@
-package com.example.a7metros.ui
+package com.example.a7metros.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
