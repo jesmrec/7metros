@@ -3,7 +3,7 @@
 ## 1. Wire the plugin into the build
 
 - [x] 1.1 Add a `detekt` version and `detekt` plugin alias (and a `detekt-formatting` library alias, same version) to `gradle/libs.versions.toml`; declare `alias(libs.plugins.detekt) apply false` in the root `build.gradle.kts`; verify `./gradlew help` succeeds with no plugin-resolution errors
-- [ ] 1.2 Create `config/detekt/detekt.yml` with `build: maxIssues: 0` and no rule overrides yet; in the root `build.gradle.kts`, apply the plugin to every subproject (`subprojects { apply(plugin = libs.plugins.detekt.get().pluginId) }`), configure `buildUponDefaultConfig = true` and `config.setFrom(files("$rootDir/config/detekt/detekt.yml"))` on the `detekt` extension, and make `check` depend on `detekt`; verify `./gradlew :7metros-domain:detekt` runs (NO-SOURCE is fine for the empty modules) and `./gradlew detekt` runs across all six modules without a config-parsing error (findings in `7metros`/`7metros-presentation` are expected at this point)
+- [x] 1.2 Create `config/detekt/detekt.yml` with `build: maxIssues: 0` and no rule overrides yet; in the root `build.gradle.kts`, apply the plugin to every subproject (`subprojects { apply(plugin = libs.plugins.detekt.get().pluginId) }`), configure `buildUponDefaultConfig = true` and `config.setFrom(files("$rootDir/config/detekt/detekt.yml"))` on the `detekt` extension, and make `check` depend on `detekt`; verify `./gradlew :7metros-domain:detekt` runs (NO-SOURCE is fine for the empty modules) and `./gradlew detekt` runs across all six modules without a config-parsing error (findings in `7metros`/`7metros-presentation` are expected at this point)
 
 ## 2. Curate the ruleset
 

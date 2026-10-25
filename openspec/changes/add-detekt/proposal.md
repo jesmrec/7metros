@@ -54,6 +54,13 @@ behavior, so `skip_specs: true` is set in `.openspec.yaml`.
   `check`/`detekt` wiring), and each module's `build.gradle.kts` if any
   per-module detekt configuration is needed (expected to be minimal if
   the plugin is applied centrally from the root).
+- **`gradle/gradle-daemon-jvm.properties`**: repinned from
+  `toolchainVersion=25` to `17`. detekt 1.23.8 cannot run at all under a
+  JDK 25 Gradle daemon (see design.md Decision 1/Risks); this is a
+  project-wide, committed change — every contributor's and CI's Gradle
+  daemon now provisions/runs on JDK 17 for this repo, not just this
+  machine. Module bytecode output is unaffected (still Java 11 source/
+  target compatibility).
 - **New file**: `config/detekt/detekt.yml` — the curated ruleset.
 - **Source**: any existing file that currently violates the new ruleset
   (expected: minor, in the `7metros` and `7metros-presentation` modules).
