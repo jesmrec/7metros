@@ -11,11 +11,11 @@
 
 ## 3. Create the library modules (structure only, no code)
 
-- [ ] 3.1 Create `7metros-domain/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, no project dependencies) and include it in settings; verify `./gradlew :7metros-domain:build` succeeds
-- [ ] 3.2 Create `7metros-network/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, no project dependencies) and include it; verify `./gradlew :7metros-network:build` succeeds
-- [ ] 3.3 Create `7metros-datasource/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, `implementation(project(":7metros-network"))`) and include it; verify `./gradlew :7metros-datasource:build` succeeds
-- [ ] 3.4 Create `7metros-data/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, `implementation` on `:7metros-domain` and `:7metros-datasource`) and include it; verify `./gradlew :7metros-data:build` succeeds
-- [ ] 3.5 Create `7metros-presentation/build.gradle.kts` (android-library + kotlin-compose, `namespace = "com.example.a7metros.presentation"`, compileSdk 37, minSdk 28, Java 11, `compose = true`, `implementation(project(":7metros-domain"))`) and include it; verify `./gradlew :7metros-presentation:assembleDebug` succeeds
+- [x] 3.1 Create `7metros-domain/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, no project dependencies) and include it in settings; verify `./gradlew :7metros-domain:build` succeeds
+- [x] 3.2 Create `7metros-network/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, no project dependencies) and include it; verify `./gradlew :7metros-network:build` succeeds
+- [x] 3.3 Create `7metros-datasource/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, `implementation(project(":7metros-network"))`) and include it; verify `./gradlew :7metros-datasource:build` succeeds
+- [x] 3.4 Create `7metros-data/build.gradle.kts` (kotlin-jvm, Java/JVM target 11, `implementation` on `:7metros-domain` and `:7metros-datasource`) and include it; verify `./gradlew :7metros-data:build` succeeds
+- [x] 3.5 Create `7metros-presentation/build.gradle.kts` (android-library + kotlin-compose, `namespace = "com.example.a7metros.presentation"`, compileSdk 37, minSdk 28, Java 11, `compose = true`, `implementation(project(":7metros-domain"))`) and include it; verify `./gradlew :7metros-presentation:assembleDebug` succeeds
 
 ## 4. Wire the app module and move the existing UI
 

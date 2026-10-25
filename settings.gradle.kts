@@ -24,3 +24,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "7metros"
 include(":7metros")
+include(":7metros-domain")
+include(":7metros-network")
+include(":7metros-datasource")
+include(":7metros-data")
+include(":7metros-presentation")
