@@ -1,2 +1,6 @@
 build:
   maxIssues: 0
+
+style:
+  MagicNumber:
+    excludes: ['**/7metros-presentation/**']

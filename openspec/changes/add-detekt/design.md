@@ -92,6 +92,7 @@ identically:
 
 ```kotlin
 val detektPluginId = libs.plugins.detekt.get().pluginId
+val detektFormatting = libs.detekt.formatting
 
 subprojects {
     apply(plugin = detektPluginId)
@@ -100,6 +101,10 @@ subprojects {
         config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
         parallel = true
+    }
+
+    dependencies {
+        add("detektPlugins", detektFormatting)
     }
 
     tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
@@ -144,6 +149,13 @@ subprojects {
     both of those modules' own `build.gradle.kts`, matching the pattern
     `7metros-domain` already had, so the gap doesn't resurface for other
     tooling later.
+  - Same `libs` closure-receiver issue as above applies to the
+    `detektPlugins` dependency (task 2.2): `libs.detekt.formatting` is
+    captured in a root-scope `val` first, and added via
+    `dependencies { add("detektPlugins", detektFormatting) }` rather than
+    the plugin-generated `detektPlugins(...)` DSL function, since that
+    generated accessor isn't guaranteed to resolve inside the `subprojects`
+    closure either.
 - *Alternative considered:* declare `alias(libs.plugins.detekt)` in each of
   the six `build.gradle.kts` files. Rejected as repetitive busywork with no
   benefit over the root-level `subprojects` block, and a new module would

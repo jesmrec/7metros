@@ -8,6 +8,7 @@ plugins {
 }
 
 val detektPluginId = libs.plugins.detekt.get().pluginId
+val detektFormatting = libs.detekt.formatting
 
 subprojects {
     apply(plugin = detektPluginId)
@@ -16,6 +17,10 @@ subprojects {
         config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
         parallel = true
+    }
+
+    dependencies {
+        add("detektPlugins", detektFormatting)
     }
 
     tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
