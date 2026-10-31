@@ -1,7 +1,7 @@
 ---
 name: openspec-propose
 description: Propose a new OpenSpec change with all artifacts generated in one step. Use when the user wants to quickly describe what they want to build and get a complete proposal with design, specs, and tasks ready for implementation. Also use when the user says "openspec propose" or "opsx propose".
-allowed-tools: Bash(openspec:*)
+allowed-tools: Bash(openspec:*), Bash(mv:*)
 license: MIT
 compatibility: Requires openspec CLI.
 metadata:
@@ -39,11 +39,13 @@ Otherwise, with no root, what happens next depends on how this workflow was reac
 
 In both branches, never create the root as a side effect: do not run `openspec init` until the user asks for it, do not hand-create `openspec/` files, and do not let a command create it.
 
-**Input**: The user's request should include a change name (kebab-case) OR a description of what they want to build.
+**Input**: The user's request should include a change name (kebab-case), a description of what they want to build, OR a path to a loose `request.md` file (this project's convention: drafted on a feature branch at `openspec/changes/request.md`, before any change folder exists).
 
 **Steps**
 
 1. **Understand the request and clarify material ambiguity**
+
+   If the input is a path to a `request.md` file sitting directly under `openspec/changes/` (not yet inside a change subfolder), read that file and use its content as the description for the rest of this step. Remember its path (`<root.path>/openspec/changes/request.md`) - it must be moved into the new change folder once that folder exists (step 4a).
 
    If no clear input is provided, ask the user (open-ended, no preset options):
    > "What change do you want to work on? Describe what you want to build or fix."
@@ -88,6 +90,8 @@ In both branches, never create the root as a side effect: do not run `openspec i
    openspec new change "<name>" --schema "<schema-name>"
    ```
    This creates a scaffolded change in the planning home resolved by the CLI with `.openspec.yaml`.
+
+   a. **Move the loose request file in, if there was one**: if step 1 read its input from `openspec/changes/request.md`, move that file into the change folder you just created, so it stops being a loose file once `main` sees it: `mv "<root.path>/openspec/changes/request.md" "<root.path>/openspec/changes/<name>/request.md"`. Verify the source no longer exists at the loose path and the destination now does before continuing.
 
 5. **Get the artifact build order**
    ```bash
