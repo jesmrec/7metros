@@ -16,4 +16,8 @@ kotlin {
 dependencies {
     implementation(project(":7metros-network"))
     implementation(libs.jsoup)
+    implementation(libs.kotlinx.coroutines.core)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
