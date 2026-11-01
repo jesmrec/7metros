@@ -13,9 +13,9 @@
 
 ## 3. Datasource layer: current-jornada resolution
 
-- [ ] 3.1 Save a raw-HTML fixture of an Asobal page containing the site-wide "current jornada" nav link; verify the exact markup against the live site's raw HTML (not a markdown conversion) before using it, per design.md's Open Questions.
-- [ ] 3.2 Implement `AsobalCurrentJornadaResolver` (or equivalent) that parses that nav link's href and extracts the jornada number; verify with a unit test parsing the fixture from 3.1 and asserting the correct jornada number.
-- [ ] 3.3 Add a sanity check to the resolver so a resolved jornada whose matches fall far from the current date is treated as a resolution failure rather than trusted blindly (per design.md's Risks); verify with a unit test using a fixture where the resolved jornada's dates are stale.
+- [x] 3.1 Save a raw-HTML fixture of an Asobal page containing the site-wide "current jornada" nav link; verify the exact markup against the live site's raw HTML (not a markdown conversion) before using it, per design.md's Open Questions.
+- [x] 3.2 Implement `AsobalCurrentJornadaResolver` (or equivalent) that parses that nav link's href and extracts the jornada number; verify with a unit test parsing the fixture from 3.1 and asserting the correct jornada number.
+- [x] 3.3 Add a sanity check to the resolver so a resolved jornada whose matches fall far from the current date is treated as a resolution failure rather than trusted blindly (per design.md's Risks); verify with a unit test using a fixture where the resolved jornada's dates are stale.
 
 ## 4. Datasource layer: results scraping
 
