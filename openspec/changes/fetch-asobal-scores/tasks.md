@@ -8,8 +8,8 @@
 
 ## 2. Network layer
 
-- [ ] 2.1 Implement a minimal HTTP client abstraction in `7metros-network` exposing a suspend "fetch raw body for a URL" function returning `Result<String>`, running off the main thread; verify with a unit test against a local test server (e.g. MockWebServer) for a successful 200 response.
-- [ ] 2.2 Handle non-2xx responses and transport failures as a `Result` failure rather than throwing uncaught; verify with unit tests covering a non-2xx response and a simulated `IOException`/connection failure.
+- [x] 2.1 Implement a minimal HTTP client abstraction in `7metros-network` exposing a suspend "fetch raw body for a URL" function returning `Result<String>`, running off the main thread; verify with a unit test against a local test server (e.g. MockWebServer) for a successful 200 response.
+- [x] 2.2 Handle non-2xx responses and transport failures as a `Result` failure rather than throwing uncaught; verify with unit tests covering a non-2xx response and a simulated `IOException`/connection failure.
 
 ## 3. Datasource layer: current-jornada resolution
 
