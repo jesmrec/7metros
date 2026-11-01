@@ -2,9 +2,9 @@
 
 ## 1. Setup
 
-- [ ] 1.1 Add the chosen HTTP client (OkHttp) to `gradle/libs.versions.toml` and `7metros-network/build.gradle.kts`; verify `./gradlew :7metros-network:build` succeeds with the dependency resolved.
-- [ ] 1.2 Add the chosen HTML parser (Jsoup) to `gradle/libs.versions.toml` and `7metros-datasource/build.gradle.kts`; verify `./gradlew :7metros-datasource:build` succeeds with the dependency resolved.
-- [ ] 1.3 Add the `INTERNET` permission to `7metros/src/main/AndroidManifest.xml`; verify by inspecting the merged manifest (`./gradlew :7metros:processDebugManifest` then check `build/intermediates/merged_manifest/debug/AndroidManifest.xml` contains the permission).
+- [x] 1.1 Add the chosen HTTP client (OkHttp) to `gradle/libs.versions.toml` and `7metros-network/build.gradle.kts`; verify `./gradlew :7metros-network:build` succeeds with the dependency resolved.
+- [x] 1.2 Add the chosen HTML parser (Jsoup) to `gradle/libs.versions.toml` and `7metros-datasource/build.gradle.kts`; verify `./gradlew :7metros-datasource:build` succeeds with the dependency resolved.
+- [x] 1.3 Add the `INTERNET` permission to `7metros/src/main/AndroidManifest.xml`; verify by inspecting the merged manifest (`./gradlew :7metros:processDebugManifest` then check `build/intermediates/merged_manifest/debug/AndroidManifest.xml` contains the permission).
 
 ## 2. Network layer
 
