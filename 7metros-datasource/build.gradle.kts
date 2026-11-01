@@ -15,4 +15,5 @@ kotlin {
 
 dependencies {
     implementation(project(":7metros-network"))
+    implementation(libs.jsoup)
 }
