@@ -48,11 +48,13 @@ private fun calendarioHtmlWithDate(date: String) = """
 """.trimIndent()
 
 private class FakeNetworkClient(
-    private val responses: Map<String, Result<String>>,
+    private val responses: Map<String, Result<ByteArray>>,
 ) : NetworkClient {
-    override suspend fun fetch(url: String): Result<String> =
+    override suspend fun fetch(url: String): Result<ByteArray> =
         responses[url] ?: error("No fake response configured for $url")
 }
+
+private fun String.toAsobalBytes(): ByteArray = toByteArray(Charsets.ISO_8859_1)
 
 class AsobalCurrentJornadaResolverTest {
 
@@ -177,9 +179,9 @@ class AsobalCurrentJornadaResolverTest {
             networkClient = FakeNetworkClient(
                 mapOf(
                     "https://www.asobal.es/liga/resultados/" to Result.success(
-                        loadNavLinkFixture().outerHtml(),
+                        loadNavLinkFixture().outerHtml().toAsobalBytes(),
                     ),
-                    "https://www.asobal.es/liga/resultados/8/" to Result.success(FRESH_RESULTS_HTML),
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(FRESH_RESULTS_HTML.toAsobalBytes()),
                 ),
             ),
             today = { TODAY_IN_FIXTURE },
@@ -210,13 +212,13 @@ class AsobalCurrentJornadaResolverTest {
         val resolver = AsobalCurrentJornadaResolver(
             networkClient = FakeNetworkClient(
                 mapOf(
-                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML),
-                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML),
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
                     "https://www.asobal.es/liga/resultados/8/" to Result.success(
-                        resultsHtmlWithDate(FINISHED_JORNADA, "03/11/2026"),
+                        resultsHtmlWithDate(FINISHED_JORNADA, "03/11/2026").toAsobalBytes(),
                     ),
                     "https://www.asobal.es/liga/calendario/9/" to Result.success(
-                        calendarioHtmlWithDate("15/11/2026"),
+                        calendarioHtmlWithDate("15/11/2026").toAsobalBytes(),
                     ),
                 ),
             ),
@@ -233,8 +235,8 @@ class AsobalCurrentJornadaResolverTest {
         val resolver = AsobalCurrentJornadaResolver(
             networkClient = FakeNetworkClient(
                 mapOf(
-                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_1_HTML),
-                    "https://www.asobal.es/liga/resultados/1/" to Result.success(EMPTY_RESULTS_HTML),
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_1_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/1/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
                 ),
             ),
         )

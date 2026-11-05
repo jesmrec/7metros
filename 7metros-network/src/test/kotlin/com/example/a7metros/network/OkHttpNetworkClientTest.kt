@@ -36,7 +36,7 @@ class OkHttpNetworkClientTest {
 
         val result = client.fetch(server.url("/").toString())
 
-        assertEquals("hello", result.getOrThrow())
+        assertEquals("hello", String(result.getOrThrow()))
     }
 
     @Test

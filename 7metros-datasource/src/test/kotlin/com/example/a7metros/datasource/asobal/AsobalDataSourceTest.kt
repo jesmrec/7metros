@@ -24,11 +24,11 @@ private val RESULTS_HTML = """
 """.trimIndent()
 
 private class RecordingFakeNetworkClient(
-    private val responses: Map<String, Result<String>>,
+    private val responses: Map<String, Result<ByteArray>>,
 ) : NetworkClient {
     val fetchedUrls = mutableListOf<String>()
 
-    override suspend fun fetch(url: String): Result<String> {
+    override suspend fun fetch(url: String): Result<ByteArray> {
         fetchedUrls += url
         return responses[url] ?: error("No fake response configured for $url")
     }
@@ -45,26 +45,26 @@ class AsobalDataSourceTest {
     fun `fetchResults resolves the current jornada when none is passed`() = runTest {
         val networkClient = RecordingFakeNetworkClient(
             mapOf(
-                NAV_LINK_URL to Result.success(NAV_LINK_HTML),
-                JORNADA_8_RESULTS_URL to Result.success(RESULTS_HTML),
+                NAV_LINK_URL to Result.success(NAV_LINK_HTML.toByteArray(Charsets.ISO_8859_1)),
+                JORNADA_8_RESULTS_URL to Result.success(RESULTS_HTML.toByteArray(Charsets.ISO_8859_1)),
             ),
         )
 
         val result = dataSource(networkClient).fetchResults()
 
         assertTrue(networkClient.fetchedUrls.contains(NAV_LINK_URL))
-        assertEquals(RESULTS_HTML, result.getOrThrow())
+        assertEquals(RESULTS_HTML, String(result.getOrThrow(), Charsets.ISO_8859_1))
     }
 
     @Test
     fun `fetchResults does not resolve the current jornada when one is passed explicitly`() = runTest {
         val networkClient = RecordingFakeNetworkClient(
-            mapOf(JORNADA_5_RESULTS_URL to Result.success(RESULTS_HTML)),
+            mapOf(JORNADA_5_RESULTS_URL to Result.success(RESULTS_HTML.toByteArray(Charsets.ISO_8859_1))),
         )
 
         val result = dataSource(networkClient).fetchResults(jornada = 5)
 
         assertFalse(networkClient.fetchedUrls.contains(NAV_LINK_URL))
-        assertEquals(RESULTS_HTML, result.getOrThrow())
+        assertEquals(RESULTS_HTML, String(result.getOrThrow(), Charsets.ISO_8859_1))
     }
 }
