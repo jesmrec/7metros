@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.io.ByteArrayInputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -14,6 +15,12 @@ private const val ASOBAL_RESULTS_LIST_URL = "https://www.asobal.es/liga/resultad
 private const val ASOBAL_RESULTS_BASE_URL = "https://www.asobal.es/liga/resultados"
 private const val ASOBAL_CALENDARIO_BASE_URL = "https://www.asobal.es/liga/calendario"
 private const val MAX_STALE_DAYS = 30L
+
+// asobal.es's pages declare conflicting charsets in duplicate <meta charset> tags.
+// Rather than let Jsoup guess from those (or trust an HTTP header that might be missing
+// on some response), we force the charset empirically confirmed from the raw bytes
+// ourselves - a wrong guess here would corrupt accented characters irrecoverably.
+private const val ASOBAL_CHARSET = "ISO-8859-1"
 
 // Every Asobal page's footer links to the current jornada's results, e.g. /liga/resultados/8/,
 // unlike the default (no-number) results page, which always renders Jornada 1.
@@ -69,10 +76,11 @@ class AsobalCurrentJornadaResolver(
         networkClient.fetch("$ASOBAL_CALENDARIO_BASE_URL/$jornada/").getOrNull()
             ?.let { extractMatchDates(parseDocument(it)).minOrNull() }
 
-    private suspend fun fetchOrThrow(url: String): String = networkClient.fetch(url).getOrThrow()
+    private suspend fun fetchOrThrow(url: String): ByteArray = networkClient.fetch(url).getOrThrow()
 
-    private suspend fun parseDocument(html: String): Document =
-        withContext(Dispatchers.Default) { Jsoup.parse(html) }
+    private suspend fun parseDocument(bytes: ByteArray): Document = withContext(Dispatchers.Default) {
+        Jsoup.parse(ByteArrayInputStream(bytes), ASOBAL_CHARSET, "")
+    }
 
     internal fun resolveJornadaNumber(document: Document): Int {
         val link = document.selectFirst(CURRENT_JORNADA_LINK_SELECTOR)

@@ -24,8 +24,8 @@ class AsobalResultsParserTest {
 
         assertEquals(EXPECTED_MATCHES_PER_JORNADA, matches.size)
         val firstMatch = matches[0]
-        assertEquals("GRA", firstMatch.homeTeam)
-        assertEquals("BAR", firstMatch.awayTeam)
+        assertEquals("Fraikin BM. Granollers", firstMatch.homeTeam)
+        assertEquals("Barça", firstMatch.awayTeam)
         assertEquals(AsobalScore(home = 25, away = 36), firstMatch.score)
         assertEquals(AsobalMatchStatus.FINISHED, firstMatch.status)
     }
@@ -36,9 +36,18 @@ class AsobalResultsParserTest {
 
         assertEquals(EXPECTED_MATCHES_PER_JORNADA, matches.size)
         val firstMatch = matches[0]
-        assertEquals("BAR", firstMatch.homeTeam)
-        assertEquals("SEV", firstMatch.awayTeam)
+        assertEquals("Barça", firstMatch.homeTeam)
+        assertEquals("Cajasol Sevilla Bm. Proin", firstMatch.awayTeam)
         assertNull(firstMatch.score)
         assertEquals(AsobalMatchStatus.NOT_YET_PLAYED, firstMatch.status)
+    }
+
+    @Test
+    fun `parseAsobalMatches decodes an accented team name correctly`() {
+        val matches = parseAsobalMatches(loadFixture(FINISHED_FIXTURE_PATH))
+
+        val matchWithAccentedTeam = matches.single { it.awayTeam == "Dicorpebal Logroño La Rioja" }
+
+        assertEquals("BM Caserío Ciudad Real", matchWithAccentedTeam.homeTeam)
     }
 }

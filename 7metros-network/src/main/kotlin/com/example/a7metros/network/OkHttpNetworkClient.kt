@@ -12,12 +12,12 @@ class OkHttpNetworkClient(
     private val httpClient: OkHttpClient = OkHttpClient(),
 ) : NetworkClient {
 
-    override suspend fun fetch(url: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun fetch(url: String): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
             val request = Request.Builder().url(url).build()
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw HttpException(response.code)
-                response.body?.string().orEmpty()
+                response.body?.bytes() ?: ByteArray(0)
             }
         }
     }
