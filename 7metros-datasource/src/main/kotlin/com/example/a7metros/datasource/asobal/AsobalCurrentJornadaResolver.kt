@@ -12,6 +12,7 @@ import kotlin.math.abs
 
 private const val ASOBAL_RESULTS_LIST_URL = "https://www.asobal.es/liga/resultados/"
 private const val ASOBAL_RESULTS_BASE_URL = "https://www.asobal.es/liga/resultados"
+private const val ASOBAL_CALENDARIO_BASE_URL = "https://www.asobal.es/liga/calendario"
 private const val MAX_STALE_DAYS = 30L
 
 // Every Asobal page's footer links to the current jornada's results, e.g. /liga/resultados/8/,
@@ -31,10 +32,42 @@ class AsobalCurrentJornadaResolver(
 
     suspend fun resolve(): Result<Int> = runCatching {
         val jornada = resolveJornadaNumber(parseDocument(fetchOrThrow(ASOBAL_RESULTS_LIST_URL)))
-        val resultsDocument = parseDocument(fetchOrThrow("$ASOBAL_RESULTS_BASE_URL/$jornada/"))
-        requireFreshJornada(resultsDocument, jornada)
-        jornada
+        resolveJornada(jornada)
     }
+
+    // The nav link can point at a jornada whose results page hasn't been populated yet
+    // (e.g. between rounds, or during a scheduled break) - that page has zero match
+    // entries, as opposed to one with real-but-too-old entries (handled by
+    // requireFreshJornada instead, since that shape signals a broken resolution).
+    private suspend fun resolveJornada(jornada: Int): Int {
+        val matchDates = extractMatchDates(parseDocument(fetchOrThrow("$ASOBAL_RESULTS_BASE_URL/$jornada/")))
+        return if (matchDates.isNotEmpty()) {
+            requireFreshJornada(matchDates, jornada)
+            jornada
+        } else {
+            resolveGapJornada(jornada)
+        }
+    }
+
+    private suspend fun resolveGapJornada(upcomingJornada: Int): Int {
+        if (upcomingJornada <= 1) return upcomingJornada
+        val previousJornada = upcomingJornada - 1
+        val previousLastMatchDate = extractMatchDates(
+            parseDocument(fetchOrThrow("$ASOBAL_RESULTS_BASE_URL/$previousJornada/")),
+        ).maxOrNull() ?: error("No match dates found for the previous jornada $previousJornada either")
+        val upcomingFirstMatchDate = fetchFirstUpcomingMatchDate(upcomingJornada)
+        return decideGapJornada(
+            previousJornada,
+            previousLastMatchDate,
+            upcomingJornada,
+            upcomingFirstMatchDate,
+            today(),
+        )
+    }
+
+    private suspend fun fetchFirstUpcomingMatchDate(jornada: Int): LocalDate? =
+        networkClient.fetch("$ASOBAL_CALENDARIO_BASE_URL/$jornada/").getOrNull()
+            ?.let { extractMatchDates(parseDocument(it)).minOrNull() }
 
     private suspend fun fetchOrThrow(url: String): String = networkClient.fetch(url).getOrThrow()
 
@@ -50,15 +83,34 @@ class AsobalCurrentJornadaResolver(
         return match.groupValues[1].toInt()
     }
 
-    internal fun requireFreshJornada(document: Document, jornada: Int) {
-        val matchDates = document.select("span.head").mapNotNull { element ->
+    internal fun extractMatchDates(document: Document): List<LocalDate> =
+        document.select("span.head").mapNotNull { element ->
             MATCH_DATE_REGEX.find(element.text())?.value?.let {
                 LocalDate.parse(it, MATCH_DATE_FORMAT)
             }
         }
+
+    internal fun requireFreshJornada(matchDates: List<LocalDate>, jornada: Int) {
         val closestGapInDays = matchDates.minOfOrNull { abs(ChronoUnit.DAYS.between(it, today())) }
         if (closestGapInDays == null || closestGapInDays > MAX_STALE_DAYS) {
             throw StaleJornadaException(jornada)
         }
+    }
+
+    // Pure: which neighboring jornada to show when `upcomingJornada`'s results aren't
+    // populated yet. Ties, and no earlier jornada to fall back to, favor upcoming;
+    // an undeterminable upcoming date (e.g. season over, nothing published yet) favors
+    // the previous, already-finished one.
+    internal fun decideGapJornada(
+        previousJornada: Int,
+        previousLastMatchDate: LocalDate,
+        upcomingJornada: Int,
+        upcomingFirstMatchDate: LocalDate?,
+        today: LocalDate,
+    ): Int {
+        if (upcomingFirstMatchDate == null) return previousJornada
+        val daysSinceFinished = ChronoUnit.DAYS.between(previousLastMatchDate, today)
+        val daysUntilUpcoming = ChronoUnit.DAYS.between(today, upcomingFirstMatchDate)
+        return if (daysSinceFinished < daysUntilUpcoming) previousJornada else upcomingJornada
     }
 }
