@@ -22,7 +22,11 @@
 
 - [x] 4.1 Define the common `DataSource` abstraction in `7metros-datasource` (so a second implementation can later conform to it) and an `AsobalDataSource` that fetches `/liga/resultados/<jornada>/`, where `jornada: Int? = null` resolves via the Task 3 resolver when absent; verify with a unit test asserting the resolver is invoked only when no jornada is passed.
 - [ ] 4.2 Save raw-HTML fixtures of an Asobal results page covering all three match states (finished with a score, in-progress/live, not-yet-played); verify each fixture's content matches the live site's raw HTML for a page in that state. If a given state can't be found already-populated on `resultados` against the live site (see design.md's Open Questions), source it from the Task 3.4/4.6 `calendario` fallback path instead and note which path it came from.
+  - Done so far: `resultados-finished.html` (finished, verified against live `resultados/8/`) and `calendario-not-started.html` (not-yet-played, verified against live `calendario/9/`, since `resultados/9/` is still empty).
+  - Still missing: in-progress. Jornadas usually play over a weekend (occasionally a weekday fixture happens too, e.g. rescheduled matches), and no jornada is playing right now, so no live match exists to capture (confirmed live, and via the Wayback Machine, which has no archived snapshots of this path at all). Deferred to Workflow follow-up below - capture it during jornada 9's playing window (13-15 Nov 2026).
 - [ ] 4.3 Implement HTML parsing of the results page into a datasource-level model (both team names, nullable score, match status); verify with unit tests against the Task 4.2 fixtures, one assertion per match state.
+  - Done so far: `AsobalMatch`/`AsobalScore`/`AsobalMatchStatus` model and `parseAsobalMatches` parser added, with passing assertions for finished and not-yet-played (both fixtures from 4.2). `AsobalMatchStatus.IN_PROGRESS` exists in the model but has no fixture-backed assertion yet.
+  - Still missing: the in-progress assertion, blocked on the same fixture as 4.2 - tracked in the same Workflow follow-up entry.
 - [ ] 4.4 Force correct character decoding during parsing despite Asobal's conflicting charset declarations; verify with a unit test asserting an accented team name (e.g. containing "á" or "ñ") decodes correctly from the fixture.
 - [ ] 4.5 Surface fetch/parse failures (unreachable source, unexpected HTML structure) as a `Result` failure from `AsobalDataSource` rather than a successful empty/partial result; verify with unit tests simulating a network failure and a malformed-HTML fixture.
 - [ ] 4.6 Add the `calendario` fallback to `AsobalDataSource` (per design.md's "`AsobalDataSource` falls back to `/liga/calendario/<jornada>/`" decision): when `resultados`'s parsed match list for a jornada is empty, fetch and parse `/liga/calendario/<jornada>/` for the same jornada number instead, mapping its scheduled matches to the same datasource-level model as not-yet-played; verify with unit tests covering the fallback triggering on an empty `resultados` fixture and not triggering when `resultados` already has entries.
@@ -50,5 +54,6 @@
 
 ## Workflow follow-up
 
+- Capture a live-verified "in-progress" `resultados` fixture during jornada 9's playing window (13-15 Nov 2026) and complete Task 4.2's third state; extend Task 4.3's parsing and tests for that state once it's in hand. Until then, 4.3-4.5 proceed with the finished and not-yet-played states only.
 - Confirm CI (unit tests; instrumented tests are not applicable since this change has none) passes before archiving, per the project's `operations.archive` rule.
 - Archive the change once implementation and CI are verified.

@@ -9,7 +9,7 @@ import org.junit.Test
 import java.io.IOException
 import java.time.LocalDate
 
-private const val NAV_LINK_FIXTURE_PATH = "fixtures/asobal/nav-link-current-jornada-8.html"
+private const val NAV_LINK_FIXTURE_PATH = "fixtures/asobal/nav-link-with-current-jornada.html"
 private const val EXPECTED_CURRENT_JORNADA = 8
 private const val FINISHED_JORNADA = 8
 private const val UPCOMING_JORNADA = 9
