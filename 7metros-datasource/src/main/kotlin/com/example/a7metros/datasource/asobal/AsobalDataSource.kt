@@ -2,17 +2,27 @@ package com.example.a7metros.datasource.asobal
 
 import com.example.a7metros.datasource.DataSource
 import com.example.a7metros.network.NetworkClient
+import org.jsoup.Jsoup
+import java.io.ByteArrayInputStream
 
 private const val ASOBAL_RESULTS_BASE_URL = "https://www.asobal.es/liga/resultados"
+
+// Same charset forced by AsobalCurrentJornadaResolver - see its comment for why.
+private const val ASOBAL_CHARSET = "ISO-8859-1"
 
 class AsobalDataSource(
     private val networkClient: NetworkClient,
     private val currentJornadaResolver: AsobalCurrentJornadaResolver,
 ) : DataSource {
 
-    override suspend fun fetchResults(jornada: Int?): Result<ByteArray> {
-        val resolvedJornada = jornada
-            ?: currentJornadaResolver.resolve().getOrElse { return Result.failure(it) }
-        return networkClient.fetch("$ASOBAL_RESULTS_BASE_URL/$resolvedJornada/")
+    // Wraps the whole fetch+parse pipeline so a malformed-page parse failure (e.g. a
+    // selector no longer matching, see AsobalResultsParser's error() calls) surfaces as
+    // a Result failure exactly like a network failure, rather than throwing uncaught or
+    // slipping through as an empty/partial list.
+    override suspend fun fetchResults(jornada: Int?): Result<List<AsobalMatch>> = runCatching {
+        val resolvedJornada = jornada ?: currentJornadaResolver.resolve().getOrThrow()
+        val bytes = networkClient.fetch("$ASOBAL_RESULTS_BASE_URL/$resolvedJornada/").getOrThrow()
+        val document = Jsoup.parse(ByteArrayInputStream(bytes), ASOBAL_CHARSET, "")
+        parseAsobalMatches(document)
     }
 }
