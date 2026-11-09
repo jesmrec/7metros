@@ -61,7 +61,8 @@
 
 ## 8. Documentation
 
-- [ ] 8.1 Update `CLAUDE.md` to document OkHttp and Jsoup as the project's settled network/HTML-parsing libraries, per proposal.md's Impact section; verify the relevant section reflects the libraries actually added in Tasks 1.1-1.2.
+- [x] 8.1 Update `CLAUDE.md` to document OkHttp and Jsoup as the project's settled network/HTML-parsing libraries, per proposal.md's Impact section; verify the relevant section reflects the libraries actually added in Tasks 1.1-1.2.
+  - Added a "Libraries" subsection to CLAUDE.md's Architecture section, naming OkHttp (`7metros-network`) and Jsoup (`7metros-datasource`) with the same rationale design.md gave for choosing them.
 
 ## Workflow follow-up
 

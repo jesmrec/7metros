@@ -58,6 +58,16 @@ type of information (scores, standings, etc.), not tied to a single provider.
   to the Android library plugin only if it genuinely needs Android (e.g.
   on-device caching).
 
+### Libraries
+
+- **HTTP client: [OkHttp](https://square.github.io/okhttp/)**, in
+  `7metros-network`. Coroutine-friendly, testable against a local server
+  (MockWebServer) without hitting real sites in unit tests.
+- **HTML parsing: [Jsoup](https://jsoup.org/)**, in `7metros-datasource`.
+  Tolerant of malformed markup (expected from scraped sites, not APIs), and
+  lets a scraper force a specific charset when a source's declared encoding
+  can't be trusted.
+
 ## Testing strategy
 
 - **Presentation layer**: instrumented UI tests, verifying the UI reacts
