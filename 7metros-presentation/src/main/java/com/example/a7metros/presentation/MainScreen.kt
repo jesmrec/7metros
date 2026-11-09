@@ -1,6 +1,7 @@
 package com.example.a7metros.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,6 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.a7metros.domain.Match
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -42,9 +45,15 @@ private enum class BottomBarTab(val label: String) {
     Clasificacion("Clasificación"),
 }
 
+@Composable
+fun MainScreen(scoresViewModel: ScoresViewModel) {
+    val uiState by scoresViewModel.uiState.collectAsState()
+    MainScreen(uiState = uiState)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(uiState: ScoresUiState) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedTab by rememberSaveable { mutableStateOf(BottomBarTab.Resultados) }
@@ -66,9 +75,41 @@ fun MainScreen() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-            ) {}
+            ) {
+                ScoresContent(uiState = uiState)
+            }
         }
     }
+}
+
+@Composable
+private fun ScoresContent(uiState: ScoresUiState) {
+    when (uiState) {
+        is ScoresUiState.Loading -> Text(
+            text = "Cargando resultados…",
+            modifier = Modifier.padding(16.dp),
+        )
+        is ScoresUiState.Matches -> Column(modifier = Modifier.padding(16.dp)) {
+            uiState.matches.forEach { match -> MatchRow(match) }
+        }
+        is ScoresUiState.Empty -> Text(
+            text = "No hay partidos disponibles",
+            modifier = Modifier.padding(16.dp),
+        )
+        is ScoresUiState.Failure -> Text(
+            text = "No se han podido cargar los resultados",
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@Composable
+private fun MatchRow(match: Match) {
+    val scoreText = match.score?.let { "${it.home} - ${it.away}" } ?: "- : -"
+    Text(
+        text = "${match.homeTeam} $scoreText ${match.awayTeam} (${match.status})",
+        modifier = Modifier.padding(vertical = 4.dp),
+    )
 }
 
 @Composable
