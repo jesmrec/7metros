@@ -16,4 +16,7 @@ kotlin {
 dependencies {
     implementation(project(":7metros-domain"))
     implementation(project(":7metros-datasource"))
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
