@@ -35,9 +35,11 @@
 
 ## 5. Domain layer
 
-- [ ] 5.1 Add the `Match` model (`homeTeam`, `awayTeam`, `score: Score?`, `status: MatchStatus`) and `MatchStatus` enum (not-yet-played / in-progress / finished) to `7metros-domain`, with no Asobal-specific fields; verify by compiling `7metros-domain` standalone with no dependency on `7metros-datasource`.
-- [ ] 5.2 Add a repository interface (e.g. `ScoresRepository.getCurrentJornadaMatches(jornada: Int? = null): Result<List<Match>>`) to `7metros-domain`; verify it compiles with no implementation yet.
-- [ ] 5.3 Add a use case that calls the repository and forwards the optional jornada parameter and any failure unchanged; verify with a unit test using a fake repository asserting both the parameter pass-through and failure propagation.
+- [x] 5.1 Add the `Match` model (`homeTeam`, `awayTeam`, `score: Score?`, `status: MatchStatus`) and `MatchStatus` enum (not-yet-played / in-progress / finished) to `7metros-domain`, with no Asobal-specific fields; verify by compiling `7metros-domain` standalone with no dependency on `7metros-datasource`.
+  - `Match`/`Score`/`MatchStatus` added to `7metros-domain` (mirrors `AsobalMatch`'s shape, no Asobal-specific fields). `7metros-domain/build.gradle.kts` declares no dependencies at all, so `./gradlew :7metros-domain:build` compiling standalone already confirms no `7metros-datasource` coupling.
+- [x] 5.2 Add a repository interface (e.g. `ScoresRepository.getCurrentJornadaMatches(jornada: Int? = null): Result<List<Match>>`) to `7metros-domain`; verify it compiles with no implementation yet.
+- [x] 5.3 Add a use case that calls the repository and forwards the optional jornada parameter and any failure unchanged; verify with a unit test using a fake repository asserting both the parameter pass-through and failure propagation.
+  - `GetCurrentJornadaMatchesUseCase` added, a thin `operator fun invoke` delegating straight to `ScoresRepository.getCurrentJornadaMatches`. `7metros-domain/build.gradle.kts` gained `testImplementation` on JUnit and `kotlinx-coroutines-test` (needed for `runTest`) since this is the module's first test.
 
 ## 6. Data layer
 
