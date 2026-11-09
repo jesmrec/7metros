@@ -43,8 +43,10 @@
 
 ## 6. Data layer
 
-- [ ] 6.1 Implement the repository, calling `AsobalDataSource` and mapping its datasource-level model to the domain `Match` model (including the null-score case for not-yet-played matches); verify with a unit test asserting the mapping for all three match states.
-- [ ] 6.2 Verify an explicit jornada parameter passed into the repository reaches the datasource unchanged, and a datasource failure reaches the caller as a `Result` failure; cover both with unit tests using a fake/mock datasource.
+- [x] 6.1 Implement the repository, calling `AsobalDataSource` and mapping its datasource-level model to the domain `Match` model (including the null-score case for not-yet-played matches); verify with a unit test asserting the mapping for all three match states.
+  - `AsobalScoresRepository` added, depending on the `DataSource` abstraction (not `AsobalDataSource` directly) and mapping via `Result.map` plus private `toDomain()` extensions. Tested against a fake `DataSource` with one match per state (finished, in-progress, not-yet-played).
+- [x] 6.2 Verify an explicit jornada parameter passed into the repository reaches the datasource unchanged, and a datasource failure reaches the caller as a `Result` failure; cover both with unit tests using a fake/mock datasource.
+  - Covered by the same fake `DataSource`: one test asserts the recorded `jornada` matches what was passed in, another asserts a datasource `Result.failure` reaches the caller with the same exception instance (via `Result.map`, which passes failures through unchanged rather than invoking the transform).
 
 ## 7. Presentation and app wiring
 
