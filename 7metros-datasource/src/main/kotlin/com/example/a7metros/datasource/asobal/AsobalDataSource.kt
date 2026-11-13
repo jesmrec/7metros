@@ -22,11 +22,25 @@ class AsobalDataSource(
     // slipping through as an empty/partial list.
     override suspend fun fetchResults(jornada: Int?): Result<List<AsobalMatch>> = runCatching {
         val resolvedJornada = jornada ?: currentJornadaResolver.resolve().getOrThrow()
-        val matches = fetchAndParse("$ASOBAL_RESULTS_BASE_URL/$resolvedJornada/")
-        // An upcoming jornada resolved via the gap-period fallback has nothing under
-        // resultados yet; calendario carries its scheduled matches well in advance,
-        // sharing the same "info-results" markup so parseAsobalMatches covers it too.
-        if (matches.isNotEmpty()) matches else fetchAndParse("$ASOBAL_CALENDARIO_BASE_URL/$resolvedJornada/")
+        val resultadosMatches = fetchAndParse("$ASOBAL_RESULTS_BASE_URL/$resolvedJornada/")
+        // calendario carries every match of the jornada (scheduled well in advance,
+        // sharing the same "info-results" markup so parseAsobalMatches covers it too),
+        // while resultados only renders entries for matches it has started tracking
+        // (in progress or finished) - matches still to be played are simply absent from
+        // it while the round is live, not listed there with a "not yet played" status.
+        // Use calendario's full list as the base and layer resultados's entries on top,
+        // since those reflect the live/finished state more promptly.
+        val calendarioMatches = fetchAndParse("$ASOBAL_CALENDARIO_BASE_URL/$resolvedJornada/")
+        mergeWithLiveMatches(calendarioMatches, resultadosMatches)
+    }
+
+    private fun mergeWithLiveMatches(
+        calendarioMatches: List<AsobalMatch>,
+        resultadosMatches: List<AsobalMatch>,
+    ): List<AsobalMatch> {
+        if (calendarioMatches.isEmpty()) return resultadosMatches
+        val resultadosByTeams = resultadosMatches.associateBy { it.homeTeam to it.awayTeam }
+        return calendarioMatches.map { resultadosByTeams[it.homeTeam to it.awayTeam] ?: it }
     }
 
     private suspend fun fetchAndParse(url: String): List<AsobalMatch> {
