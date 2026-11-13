@@ -51,12 +51,16 @@ private fun teamName(teamLink: Element, clubNames: Map<String, String>): String 
     return clubNames[code] ?: error("No club name found for team code $code")
 }
 
+// Any other, non-empty status text (e.g. a running clock or "En directo") means the
+// match is live - the site doesn't use one fixed label for that state, so rather than
+// maintaining an exhaustive list we treat "not finished, not pending" as in progress.
 private fun parseStatus(matchElement: Element): AsobalMatchStatus {
-    val statusText = matchElement.selectFirst(STATUS_SELECTOR)?.text().orEmpty()
+    val statusText = matchElement.selectFirst(STATUS_SELECTOR)?.text()
+        ?: error("Could not find a status element for this match")
     return when {
         statusText.contains(FINISHED_LABEL) -> AsobalMatchStatus.FINISHED
         statusText.contains(NOT_YET_PLAYED_LABEL) -> AsobalMatchStatus.NOT_YET_PLAYED
-        else -> error("Unrecognized match status text: $statusText")
+        else -> AsobalMatchStatus.IN_PROGRESS
     }
 }
 
