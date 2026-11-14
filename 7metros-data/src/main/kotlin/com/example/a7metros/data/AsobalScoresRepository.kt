@@ -22,6 +22,7 @@ private fun AsobalMatch.toDomain(): Match = Match(
     score = score?.let { Score(home = it.home, away = it.away) },
     status = status.toDomain(),
     minute = minute,
+    kickoff = kickoff,
 )
 
 private fun AsobalMatchStatus.toDomain(): MatchStatus = when (this) {

@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.example.a7metros.domain.Match
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private enum class BottomBarTab(val label: String) {
     Resultados("Resultados"),
@@ -103,10 +105,16 @@ private fun ScoresContent(uiState: ScoresUiState) {
     }
 }
 
+private val KICKOFF_FORMAT = DateTimeFormatter.ofPattern("EEE dd/MM HH:mm", Locale.forLanguageTag("es-ES"))
+
 @Composable
 private fun MatchRow(match: Match) {
     val scoreText = match.score?.let { "${it.home} - ${it.away}" } ?: "- : -"
-    val statusText = match.minute?.let { "${match.status} ($it')" } ?: "${match.status}"
+    val statusText = when {
+        match.minute != null -> "${match.status} (${match.minute}')"
+        match.kickoff != null -> "${match.status} (${KICKOFF_FORMAT.format(match.kickoff)})"
+        else -> "${match.status}"
+    }
     Text(
         text = "${match.homeTeam} $scoreText ${match.awayTeam} ($statusText)",
         modifier = Modifier.padding(vertical = 4.dp),

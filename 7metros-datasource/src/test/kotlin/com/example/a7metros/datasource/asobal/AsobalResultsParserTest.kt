@@ -4,6 +4,7 @@ import org.jsoup.Jsoup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.time.LocalDateTime
 
 private fun liveMatchHtml(statusText: String) = """
     <html><body>
@@ -56,10 +57,11 @@ class AsobalResultsParserTest {
         assertEquals("Barça", firstMatch.awayTeam)
         assertEquals(AsobalScore(home = 25, away = 36), firstMatch.score)
         assertEquals(AsobalMatchStatus.FINISHED, firstMatch.status)
+        assertNull(firstMatch.kickoff)
     }
 
     @Test
-    fun `parseAsobalMatches extracts a not-yet-played match with no score`() {
+    fun `parseAsobalMatches extracts a not-yet-played match with no score but its kickoff`() {
         val matches = parseAsobalMatches(loadFixture(NOT_YET_PLAYED_FIXTURE_PATH))
 
         assertEquals(EXPECTED_MATCHES_PER_JORNADA, matches.size)
@@ -68,6 +70,7 @@ class AsobalResultsParserTest {
         assertEquals("Cajasol Sevilla Bm. Proin", firstMatch.awayTeam)
         assertNull(firstMatch.score)
         assertEquals(AsobalMatchStatus.NOT_YET_PLAYED, firstMatch.status)
+        assertEquals(LocalDateTime.parse("2026-11-13T20:00"), firstMatch.kickoff)
     }
 
     @Test

@@ -1,11 +1,14 @@
 package com.example.a7metros.domain
 
+import java.time.LocalDateTime
+
 data class Match(
     val homeTeam: String,
     val awayTeam: String,
     val score: Score?,
     val status: MatchStatus,
     val minute: Int? = null,
+    val kickoff: LocalDateTime? = null,
 )
 
 data class Score(val home: Int, val away: Int)
