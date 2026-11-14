@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Menu
@@ -26,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -50,12 +53,13 @@ private enum class BottomBarTab(val label: String) {
 @Composable
 fun MainScreen(scoresViewModel: ScoresViewModel) {
     val uiState by scoresViewModel.uiState.collectAsState()
-    MainScreen(uiState = uiState)
+    val isRefreshing by scoresViewModel.isRefreshing.collectAsState()
+    MainScreen(uiState = uiState, isRefreshing = isRefreshing, onRefresh = scoresViewModel::refresh)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(uiState: ScoresUiState) {
+fun MainScreen(uiState: ScoresUiState, isRefreshing: Boolean = false, onRefresh: () -> Unit = {}) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedTab by rememberSaveable { mutableStateOf(BottomBarTab.Resultados) }
@@ -78,7 +82,13 @@ fun MainScreen(uiState: ScoresUiState) {
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                ScoresContent(uiState = uiState)
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    ScoresContent(uiState = uiState)
+                }
             }
         }
     }
@@ -91,7 +101,12 @@ private fun ScoresContent(uiState: ScoresUiState) {
             text = "Cargando resultados…",
             modifier = Modifier.padding(16.dp),
         )
-        is ScoresUiState.Matches -> Column(modifier = Modifier.padding(16.dp)) {
+        is ScoresUiState.Matches -> Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
             Text(
                 text = "Jornada ${uiState.jornada}",
                 style = MaterialTheme.typography.titleMedium,
