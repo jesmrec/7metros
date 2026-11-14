@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-private val LIVE_MATCH_HTML = """
+private fun liveMatchHtml(statusText: String) = """
     <html><body>
       <div class="clubs text-center">
         <a href="/equipos/GRA/"><img title="6 - Fraikin BM. Granollers"></a>
@@ -19,12 +19,19 @@ private val LIVE_MATCH_HTML = """
               <span class="goals"><b>12</b> - <b>14</b></span>
               <a href="equipos/BAR/">BAR</a>
             </div>
-            <span class="enlaces">45'</span>
+            <span class="enlaces">$statusText</span>
           </li>
         </ul>
       </div>
     </body></html>
 """.trimIndent()
+
+private const val UNRECOGNIZED_STATUS_MINUTE = 45
+private const val FIRST_HALF_MINUTE = 29
+private const val SECOND_HALF_MINUTE = 56
+private const val EXTRA_TIME_MINUTE = 65
+
+private val LIVE_MATCH_HTML = liveMatchHtml("$UNRECOGNIZED_STATUS_MINUTE'")
 
 private const val FINISHED_FIXTURE_PATH = "fixtures/asobal/resultados-finished.html"
 private const val NOT_YET_PLAYED_FIXTURE_PATH = "fixtures/asobal/calendario-not-started.html"
@@ -70,6 +77,52 @@ class AsobalResultsParserTest {
         val match = matches.single()
         assertEquals(AsobalScore(home = 12, away = 14), match.score)
         assertEquals(AsobalMatchStatus.IN_PROGRESS, match.status)
+        assertEquals(UNRECOGNIZED_STATUS_MINUTE, match.minute)
+    }
+
+    @Test
+    fun `parseAsobalMatches recognizes a first-half match with its minute`() {
+        val html = liveMatchHtml("Primera parte ($FIRST_HALF_MINUTE')")
+        val match = parseAsobalMatches(Jsoup.parse(html, "https://www.asobal.es/")).single()
+
+        assertEquals(AsobalMatchStatus.FIRST_HALF, match.status)
+        assertEquals(FIRST_HALF_MINUTE, match.minute)
+    }
+
+    @Test
+    fun `parseAsobalMatches recognizes a half-time match with no minute`() {
+        val html = liveMatchHtml("Descanso")
+        val match = parseAsobalMatches(Jsoup.parse(html, "https://www.asobal.es/")).single()
+
+        assertEquals(AsobalMatchStatus.HALF_TIME, match.status)
+        assertNull(match.minute)
+    }
+
+    @Test
+    fun `parseAsobalMatches recognizes a second-half match with its minute`() {
+        val html = liveMatchHtml("Segunda parte ($SECOND_HALF_MINUTE')")
+        val match = parseAsobalMatches(Jsoup.parse(html, "https://www.asobal.es/")).single()
+
+        assertEquals(AsobalMatchStatus.SECOND_HALF, match.status)
+        assertEquals(SECOND_HALF_MINUTE, match.minute)
+    }
+
+    @Test
+    fun `parseAsobalMatches recognizes an extra-time match with its minute`() {
+        val html = liveMatchHtml("Prórroga ($EXTRA_TIME_MINUTE')")
+        val match = parseAsobalMatches(Jsoup.parse(html, "https://www.asobal.es/")).single()
+
+        assertEquals(AsobalMatchStatus.EXTRA_TIME, match.status)
+        assertEquals(EXTRA_TIME_MINUTE, match.minute)
+    }
+
+    @Test
+    fun `parseAsobalMatches recognizes a penalty shootout match with no minute`() {
+        val html = liveMatchHtml("Penaltis")
+        val match = parseAsobalMatches(Jsoup.parse(html, "https://www.asobal.es/")).single()
+
+        assertEquals(AsobalMatchStatus.PENALTIES, match.status)
+        assertNull(match.minute)
     }
 
     @Test

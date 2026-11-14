@@ -10,6 +10,17 @@ private const val STATUS_SELECTOR = "span.enlaces"
 private const val CLUB_LINK_SELECTOR = "div.clubs a"
 private const val FINISHED_LABEL = "Partido finalizado"
 private const val NOT_YET_PLAYED_LABEL = "No ha comenzado"
+private const val FIRST_HALF_LABEL = "Primera parte"
+private const val HALF_TIME_LABEL = "Descanso"
+private const val SECOND_HALF_LABEL = "Segunda parte"
+
+// Extra time / penalty shootout labels are a best-effort guess (Spanish handball
+// terminology); unconfirmed against a live match, unlike the labels above which were all
+// observed on the site. If the real text differs, it simply falls through to the
+// IN_PROGRESS fallback below rather than mis-mapping to the wrong phase.
+private const val EXTRA_TIME_LABEL = "Prórroga"
+private const val PENALTIES_LABEL = "Penaltis"
+private val MINUTE_REGEX = Regex("""(\d+)'""")
 private val CLUB_CODE_REGEX = Regex("""equipos/([A-Za-z0-9]+)/?""")
 private val CLUB_TITLE_NUMBER_PREFIX_REGEX = Regex("""^\d+\s*-\s*""")
 
@@ -37,12 +48,15 @@ private fun clubCode(link: Element): String? = CLUB_CODE_REGEX.find(link.attr("h
 
 private fun parseMatch(matchElement: Element, clubNames: Map<String, String>): AsobalMatch {
     val teamLinks = matchElement.select(TEAM_LINK_SELECTOR)
-    val status = parseStatus(matchElement)
+    val statusText = matchElement.selectFirst(STATUS_SELECTOR)?.text()
+        ?: error("Could not find a status element for this match")
+    val status = parseStatus(statusText)
     return AsobalMatch(
         homeTeam = teamName(teamLinks[0], clubNames),
         awayTeam = teamName(teamLinks[1], clubNames),
         score = parseScore(matchElement, status),
         status = status,
+        minute = parseMinute(statusText),
     )
 }
 
@@ -51,18 +65,23 @@ private fun teamName(teamLink: Element, clubNames: Map<String, String>): String 
     return clubNames[code] ?: error("No club name found for team code $code")
 }
 
-// Any other, non-empty status text (e.g. a running clock or "En directo") means the
-// match is live - the site doesn't use one fixed label for that state, so rather than
-// maintaining an exhaustive list we treat "not finished, not pending" as in progress.
-private fun parseStatus(matchElement: Element): AsobalMatchStatus {
-    val statusText = matchElement.selectFirst(STATUS_SELECTOR)?.text()
-        ?: error("Could not find a status element for this match")
-    return when {
-        statusText.contains(FINISHED_LABEL) -> AsobalMatchStatus.FINISHED
-        statusText.contains(NOT_YET_PLAYED_LABEL) -> AsobalMatchStatus.NOT_YET_PLAYED
-        else -> AsobalMatchStatus.IN_PROGRESS
-    }
+// Any other, non-empty status text means the match is live but in a phase we don't
+// recognize - rather than labelling it "unknown" (worse UX than a plain live indicator),
+// it falls back to the generic IN_PROGRESS state.
+private fun parseStatus(statusText: String): AsobalMatchStatus = when {
+    statusText.contains(FINISHED_LABEL) -> AsobalMatchStatus.FINISHED
+    statusText.contains(NOT_YET_PLAYED_LABEL) -> AsobalMatchStatus.NOT_YET_PLAYED
+    statusText.contains(FIRST_HALF_LABEL) -> AsobalMatchStatus.FIRST_HALF
+    statusText.contains(SECOND_HALF_LABEL) -> AsobalMatchStatus.SECOND_HALF
+    statusText.contains(HALF_TIME_LABEL) -> AsobalMatchStatus.HALF_TIME
+    statusText.contains(EXTRA_TIME_LABEL) -> AsobalMatchStatus.EXTRA_TIME
+    statusText.contains(PENALTIES_LABEL) -> AsobalMatchStatus.PENALTIES
+    else -> AsobalMatchStatus.IN_PROGRESS
 }
+
+// The minute is embedded in the same status text as the phase label, e.g. "Primera
+// parte (29')" - null when absent, as for "Descanso" (half-time) which carries no clock.
+private fun parseMinute(statusText: String): Int? = MINUTE_REGEX.find(statusText)?.groupValues?.get(1)?.toIntOrNull()
 
 // Not-yet-played matches carry a "0 - 0" placeholder score in the markup, not a real one.
 private fun parseScore(matchElement: Element, status: AsobalMatchStatus): AsobalScore? {

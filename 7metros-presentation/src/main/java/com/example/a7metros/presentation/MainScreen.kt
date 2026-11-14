@@ -106,8 +106,9 @@ private fun ScoresContent(uiState: ScoresUiState) {
 @Composable
 private fun MatchRow(match: Match) {
     val scoreText = match.score?.let { "${it.home} - ${it.away}" } ?: "- : -"
+    val statusText = match.minute?.let { "${match.status} ($it')" } ?: "${match.status}"
     Text(
-        text = "${match.homeTeam} $scoreText ${match.awayTeam} (${match.status})",
+        text = "${match.homeTeam} $scoreText ${match.awayTeam} ($statusText)",
         modifier = Modifier.padding(vertical = 4.dp),
     )
 }
