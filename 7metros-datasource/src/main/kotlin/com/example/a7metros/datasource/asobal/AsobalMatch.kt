@@ -1,11 +1,14 @@
 package com.example.a7metros.datasource.asobal
 
+import java.time.LocalDateTime
+
 data class AsobalMatch(
     val homeTeam: String,
     val awayTeam: String,
     val score: AsobalScore?,
     val status: AsobalMatchStatus,
     val minute: Int? = null,
+    val kickoff: LocalDateTime? = null,
 )
 
 data class AsobalScore(val home: Int, val away: Int)

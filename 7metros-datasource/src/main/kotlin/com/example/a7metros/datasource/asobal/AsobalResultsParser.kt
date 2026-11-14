@@ -2,11 +2,14 @@ package com.example.a7metros.datasource.asobal
 
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private const val MATCH_SELECTOR = "div.info-results li"
 private const val TEAM_LINK_SELECTOR = "div.goals-result > a"
 private const val GOAL_SELECTOR = "div.goals-result span.goals b"
 private const val STATUS_SELECTOR = "span.enlaces"
+private const val HEAD_SELECTOR = "span.head"
 private const val CLUB_LINK_SELECTOR = "div.clubs a"
 private const val FINISHED_LABEL = "Partido finalizado"
 private const val NOT_YET_PLAYED_LABEL = "No ha comenzado"
@@ -21,6 +24,12 @@ private const val SECOND_HALF_LABEL = "Segunda parte"
 private const val EXTRA_TIME_LABEL = "Prórroga"
 private const val PENALTIES_LABEL = "Penaltis"
 private val MINUTE_REGEX = Regex("""(\d+)'""")
+
+// Only calendario's not-yet-played entries render this "date - time" shape in span.head;
+// resultados's entries put the date and time in separate, dash-less fragments instead
+// (see parseKickoff), so this pattern naturally only matches the former.
+private val KICKOFF_REGEX = Regex("""(\d{2}/\d{2}/\d{4})\s*-\s*(\d{2}:\d{2})""")
+private val KICKOFF_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm")
 private val CLUB_CODE_REGEX = Regex("""equipos/([A-Za-z0-9]+)/?""")
 private val CLUB_TITLE_NUMBER_PREFIX_REGEX = Regex("""^\d+\s*-\s*""")
 
@@ -57,6 +66,7 @@ private fun parseMatch(matchElement: Element, clubNames: Map<String, String>): A
         score = parseScore(matchElement, status),
         status = status,
         minute = parseMinute(statusText),
+        kickoff = parseKickoff(matchElement, status),
     )
 }
 
@@ -88,4 +98,13 @@ private fun parseScore(matchElement: Element, status: AsobalMatchStatus): Asobal
     if (status == AsobalMatchStatus.NOT_YET_PLAYED) return null
     val goals = matchElement.select(GOAL_SELECTOR).map { it.text().trim().toInt() }
     return AsobalScore(home = goals[0], away = goals[1])
+}
+
+// Kickoff is only meaningful - and only rendered in this parseable shape - for a match
+// that hasn't been played yet.
+private fun parseKickoff(matchElement: Element, status: AsobalMatchStatus): LocalDateTime? {
+    if (status != AsobalMatchStatus.NOT_YET_PLAYED) return null
+    return matchElement.selectFirst(HEAD_SELECTOR)?.text()
+        ?.let { KICKOFF_REGEX.find(it) }
+        ?.let { LocalDateTime.parse("${it.groupValues[1]} - ${it.groupValues[2]}", KICKOFF_FORMAT) }
 }

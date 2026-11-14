@@ -11,8 +11,10 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
+import java.time.LocalDateTime
 
 private const val JORNADA = 5
+private val KICKOFF = LocalDateTime.parse("2026-11-15T12:00")
 
 private class RecordingFakeDataSource(
     private val result: Result<List<AsobalMatch>>,
@@ -29,7 +31,7 @@ private class RecordingFakeDataSource(
 class AsobalScoresRepositoryTest {
 
     @Test
-    fun `getCurrentJornadaMatches maps match states and minute to the domain model`() = runTest {
+    fun `getCurrentJornadaMatches maps match states, minute and kickoff to the domain model`() = runTest {
         val asobalMatches = listOf(
             AsobalMatch(
                 homeTeam = "Fraikin BM. Granollers",
@@ -49,6 +51,7 @@ class AsobalScoresRepositoryTest {
                 awayTeam = "IRUDEK Bidasoa Irun",
                 score = null,
                 status = AsobalMatchStatus.NOT_YET_PLAYED,
+                kickoff = KICKOFF,
             ),
         )
         val repository = AsobalScoresRepository(RecordingFakeDataSource(Result.success(asobalMatches)))
@@ -75,6 +78,7 @@ class AsobalScoresRepositoryTest {
                     awayTeam = "IRUDEK Bidasoa Irun",
                     score = null,
                     status = MatchStatus.NOT_YET_PLAYED,
+                    kickoff = KICKOFF,
                 ),
             ),
             result.getOrThrow(),
