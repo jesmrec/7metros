@@ -29,7 +29,7 @@ private class RecordingFakeDataSource(
 class AsobalScoresRepositoryTest {
 
     @Test
-    fun `getCurrentJornadaMatches maps all three match states to the domain model`() = runTest {
+    fun `getCurrentJornadaMatches maps match states and minute to the domain model`() = runTest {
         val asobalMatches = listOf(
             AsobalMatch(
                 homeTeam = "Fraikin BM. Granollers",
@@ -41,7 +41,8 @@ class AsobalScoresRepositoryTest {
                 homeTeam = "BM Caserío Ciudad Real",
                 awayTeam = "Bathco BM. Torrelavega",
                 score = AsobalScore(home = 10, away = 8),
-                status = AsobalMatchStatus.IN_PROGRESS,
+                status = AsobalMatchStatus.SECOND_HALF,
+                minute = 52,
             ),
             AsobalMatch(
                 homeTeam = "Dicorpebal Logroño La Rioja",
@@ -66,7 +67,8 @@ class AsobalScoresRepositoryTest {
                     homeTeam = "BM Caserío Ciudad Real",
                     awayTeam = "Bathco BM. Torrelavega",
                     score = Score(home = 10, away = 8),
-                    status = MatchStatus.IN_PROGRESS,
+                    status = MatchStatus.SECOND_HALF,
+                    minute = 52,
                 ),
                 Match(
                     homeTeam = "Dicorpebal Logroño La Rioja",

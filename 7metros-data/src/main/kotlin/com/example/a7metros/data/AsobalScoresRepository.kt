@@ -21,10 +21,16 @@ private fun AsobalMatch.toDomain(): Match = Match(
     awayTeam = awayTeam,
     score = score?.let { Score(home = it.home, away = it.away) },
     status = status.toDomain(),
+    minute = minute,
 )
 
 private fun AsobalMatchStatus.toDomain(): MatchStatus = when (this) {
     AsobalMatchStatus.NOT_YET_PLAYED -> MatchStatus.NOT_YET_PLAYED
+    AsobalMatchStatus.FIRST_HALF -> MatchStatus.FIRST_HALF
+    AsobalMatchStatus.HALF_TIME -> MatchStatus.HALF_TIME
+    AsobalMatchStatus.SECOND_HALF -> MatchStatus.SECOND_HALF
+    AsobalMatchStatus.EXTRA_TIME -> MatchStatus.EXTRA_TIME
+    AsobalMatchStatus.PENALTIES -> MatchStatus.PENALTIES
     AsobalMatchStatus.IN_PROGRESS -> MatchStatus.IN_PROGRESS
     AsobalMatchStatus.FINISHED -> MatchStatus.FINISHED
 }
