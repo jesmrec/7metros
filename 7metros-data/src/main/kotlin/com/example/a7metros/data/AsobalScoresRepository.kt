@@ -1,8 +1,10 @@
 package com.example.a7metros.data
 
 import com.example.a7metros.datasource.DataSource
+import com.example.a7metros.datasource.asobal.AsobalJornadaMatches
 import com.example.a7metros.datasource.asobal.AsobalMatch
 import com.example.a7metros.datasource.asobal.AsobalMatchStatus
+import com.example.a7metros.domain.JornadaMatches
 import com.example.a7metros.domain.Match
 import com.example.a7metros.domain.MatchStatus
 import com.example.a7metros.domain.Score
@@ -12,9 +14,12 @@ class AsobalScoresRepository(
     private val dataSource: DataSource,
 ) : ScoresRepository {
 
-    override suspend fun getCurrentJornadaMatches(jornada: Int?): Result<List<Match>> =
-        dataSource.fetchResults(jornada).map { matches -> matches.map { it.toDomain() } }
+    override suspend fun getCurrentJornadaMatches(jornada: Int?): Result<JornadaMatches> =
+        dataSource.fetchResults(jornada).map { it.toDomain() }
 }
+
+private fun AsobalJornadaMatches.toDomain(): JornadaMatches =
+    JornadaMatches(jornada = jornada, matches = matches.map { it.toDomain() })
 
 private fun AsobalMatch.toDomain(): Match = Match(
     homeTeam = homeTeam,

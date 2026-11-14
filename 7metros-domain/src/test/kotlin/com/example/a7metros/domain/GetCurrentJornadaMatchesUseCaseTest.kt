@@ -8,12 +8,12 @@ import org.junit.Test
 private const val JORNADA = 5
 
 private class RecordingFakeScoresRepository(
-    private val result: Result<List<Match>>,
+    private val result: Result<JornadaMatches>,
 ) : ScoresRepository {
     var requestedJornada: Int? = null
         private set
 
-    override suspend fun getCurrentJornadaMatches(jornada: Int?): Result<List<Match>> {
+    override suspend fun getCurrentJornadaMatches(jornada: Int?): Result<JornadaMatches> {
         requestedJornada = jornada
         return result
     }
@@ -23,7 +23,7 @@ class GetCurrentJornadaMatchesUseCaseTest {
 
     @Test
     fun `invoke forwards the jornada parameter to the repository`() = runTest {
-        val repository = RecordingFakeScoresRepository(Result.success(emptyList()))
+        val repository = RecordingFakeScoresRepository(Result.success(JornadaMatches(JORNADA, emptyList())))
         val useCase = GetCurrentJornadaMatchesUseCase(repository)
 
         useCase(jornada = JORNADA)

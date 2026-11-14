@@ -13,6 +13,8 @@ data class Match(
 
 data class Score(val home: Int, val away: Int)
 
+data class JornadaMatches(val jornada: Int, val matches: List<Match>)
+
 enum class MatchStatus {
     NOT_YET_PLAYED,
     FIRST_HALF,

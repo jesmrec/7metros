@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 sealed interface ScoresUiState {
     data object Loading : ScoresUiState
-    data class Matches(val matches: List<Match>) : ScoresUiState
+    data class Matches(val jornada: Int, val matches: List<Match>) : ScoresUiState
     data object Empty : ScoresUiState
     data object Failure : ScoresUiState
 }
@@ -26,8 +26,12 @@ class ScoresViewModel(
     init {
         viewModelScope.launch {
             _uiState.value = getCurrentJornadaMatches().fold(
-                onSuccess = { matches ->
-                    if (matches.isEmpty()) ScoresUiState.Empty else ScoresUiState.Matches(matches)
+                onSuccess = { jornadaMatches ->
+                    if (jornadaMatches.matches.isEmpty()) {
+                        ScoresUiState.Empty
+                    } else {
+                        ScoresUiState.Matches(jornada = jornadaMatches.jornada, matches = jornadaMatches.matches)
+                    }
                 },
                 onFailure = { ScoresUiState.Failure },
             )

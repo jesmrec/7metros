@@ -92,6 +92,11 @@ private fun ScoresContent(uiState: ScoresUiState) {
             modifier = Modifier.padding(16.dp),
         )
         is ScoresUiState.Matches -> Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Jornada ${uiState.jornada}",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
             uiState.matches.forEach { match -> MatchRow(match) }
         }
         is ScoresUiState.Empty -> Text(

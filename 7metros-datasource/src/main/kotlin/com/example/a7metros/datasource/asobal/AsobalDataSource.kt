@@ -20,7 +20,7 @@ class AsobalDataSource(
     // selector no longer matching, see AsobalResultsParser's error() calls) surfaces as
     // a Result failure exactly like a network failure, rather than throwing uncaught or
     // slipping through as an empty/partial list.
-    override suspend fun fetchResults(jornada: Int?): Result<List<AsobalMatch>> = runCatching {
+    override suspend fun fetchResults(jornada: Int?): Result<AsobalJornadaMatches> = runCatching {
         val resolvedJornada = jornada ?: currentJornadaResolver.resolve().getOrThrow()
         val resultadosMatches = fetchAndParse("$ASOBAL_RESULTS_BASE_URL/$resolvedJornada/")
         // calendario carries every match of the jornada (scheduled well in advance,
@@ -31,7 +31,7 @@ class AsobalDataSource(
         // Use calendario's full list as the base and layer resultados's entries on top,
         // since those reflect the live/finished state more promptly.
         val calendarioMatches = fetchAndParse("$ASOBAL_CALENDARIO_BASE_URL/$resolvedJornada/")
-        mergeWithLiveMatches(calendarioMatches, resultadosMatches)
+        AsobalJornadaMatches(resolvedJornada, mergeWithLiveMatches(calendarioMatches, resultadosMatches))
     }
 
     private fun mergeWithLiveMatches(
