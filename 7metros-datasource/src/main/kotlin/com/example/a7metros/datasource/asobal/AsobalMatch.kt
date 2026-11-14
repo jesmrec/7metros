@@ -13,6 +13,8 @@ data class AsobalMatch(
 
 data class AsobalScore(val home: Int, val away: Int)
 
+data class AsobalJornadaMatches(val jornada: Int, val matches: List<AsobalMatch>)
+
 enum class AsobalMatchStatus {
     NOT_YET_PLAYED,
     FIRST_HALF,

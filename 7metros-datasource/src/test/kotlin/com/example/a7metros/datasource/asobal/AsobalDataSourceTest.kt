@@ -180,7 +180,7 @@ class AsobalDataSourceTest {
         val result = dataSource(networkClient).fetchResults()
 
         assertTrue(networkClient.fetchedUrls.contains(NAV_LINK_URL))
-        assertEquals(listOf(EXPECTED_MATCH), result.getOrThrow())
+        assertEquals(AsobalJornadaMatches(jornada = 8, matches = listOf(EXPECTED_MATCH)), result.getOrThrow())
     }
 
     @Test
@@ -195,7 +195,7 @@ class AsobalDataSourceTest {
         val result = dataSource(networkClient).fetchResults(jornada = 5)
 
         assertFalse(networkClient.fetchedUrls.contains(NAV_LINK_URL))
-        assertEquals(listOf(EXPECTED_MATCH), result.getOrThrow())
+        assertEquals(AsobalJornadaMatches(jornada = 5, matches = listOf(EXPECTED_MATCH)), result.getOrThrow())
     }
 
     @Test
@@ -232,7 +232,10 @@ class AsobalDataSourceTest {
         val result = dataSource(networkClient).fetchResults(jornada = 5)
 
         assertTrue(networkClient.fetchedUrls.contains(JORNADA_5_CALENDARIO_URL))
-        assertEquals(listOf(EXPECTED_CALENDARIO_MATCH), result.getOrThrow())
+        assertEquals(
+            AsobalJornadaMatches(jornada = 5, matches = listOf(EXPECTED_CALENDARIO_MATCH)),
+            result.getOrThrow(),
+        )
     }
 
     @Test
@@ -247,7 +250,10 @@ class AsobalDataSourceTest {
 
         val result = dataSource(networkClient).fetchResults(jornada = 5)
 
-        assertEquals(listOf(EXPECTED_MATCH, EXPECTED_PENDING_MATCH), result.getOrThrow())
+        assertEquals(
+            AsobalJornadaMatches(jornada = 5, matches = listOf(EXPECTED_MATCH, EXPECTED_PENDING_MATCH)),
+            result.getOrThrow(),
+        )
     }
 
     @Test
@@ -261,6 +267,6 @@ class AsobalDataSourceTest {
 
         val result = dataSource(networkClient).fetchResults(jornada = 5)
 
-        assertEquals(listOf(EXPECTED_MATCH), result.getOrThrow())
+        assertEquals(AsobalJornadaMatches(jornada = 5, matches = listOf(EXPECTED_MATCH)), result.getOrThrow())
     }
 }

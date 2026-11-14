@@ -1,9 +1,11 @@
 package com.example.a7metros.data
 
 import com.example.a7metros.datasource.DataSource
+import com.example.a7metros.datasource.asobal.AsobalJornadaMatches
 import com.example.a7metros.datasource.asobal.AsobalMatch
 import com.example.a7metros.datasource.asobal.AsobalMatchStatus
 import com.example.a7metros.datasource.asobal.AsobalScore
+import com.example.a7metros.domain.JornadaMatches
 import com.example.a7metros.domain.Match
 import com.example.a7metros.domain.MatchStatus
 import com.example.a7metros.domain.Score
@@ -17,12 +19,12 @@ private const val JORNADA = 5
 private val KICKOFF = LocalDateTime.parse("2026-11-15T12:00")
 
 private class RecordingFakeDataSource(
-    private val result: Result<List<AsobalMatch>>,
+    private val result: Result<AsobalJornadaMatches>,
 ) : DataSource {
     var requestedJornada: Int? = null
         private set
 
-    override suspend fun fetchResults(jornada: Int?): Result<List<AsobalMatch>> {
+    override suspend fun fetchResults(jornada: Int?): Result<AsobalJornadaMatches> {
         requestedJornada = jornada
         return result
     }
@@ -54,31 +56,36 @@ class AsobalScoresRepositoryTest {
                 kickoff = KICKOFF,
             ),
         )
-        val repository = AsobalScoresRepository(RecordingFakeDataSource(Result.success(asobalMatches)))
+        val repository = AsobalScoresRepository(
+            RecordingFakeDataSource(Result.success(AsobalJornadaMatches(JORNADA, asobalMatches))),
+        )
 
         val result = repository.getCurrentJornadaMatches()
 
         assertEquals(
-            listOf(
-                Match(
-                    homeTeam = "Fraikin BM. Granollers",
-                    awayTeam = "Barça",
-                    score = Score(home = 25, away = 36),
-                    status = MatchStatus.FINISHED,
-                ),
-                Match(
-                    homeTeam = "BM Caserío Ciudad Real",
-                    awayTeam = "Bathco BM. Torrelavega",
-                    score = Score(home = 10, away = 8),
-                    status = MatchStatus.SECOND_HALF,
-                    minute = 52,
-                ),
-                Match(
-                    homeTeam = "Dicorpebal Logroño La Rioja",
-                    awayTeam = "IRUDEK Bidasoa Irun",
-                    score = null,
-                    status = MatchStatus.NOT_YET_PLAYED,
-                    kickoff = KICKOFF,
+            JornadaMatches(
+                jornada = JORNADA,
+                matches = listOf(
+                    Match(
+                        homeTeam = "Fraikin BM. Granollers",
+                        awayTeam = "Barça",
+                        score = Score(home = 25, away = 36),
+                        status = MatchStatus.FINISHED,
+                    ),
+                    Match(
+                        homeTeam = "BM Caserío Ciudad Real",
+                        awayTeam = "Bathco BM. Torrelavega",
+                        score = Score(home = 10, away = 8),
+                        status = MatchStatus.SECOND_HALF,
+                        minute = 52,
+                    ),
+                    Match(
+                        homeTeam = "Dicorpebal Logroño La Rioja",
+                        awayTeam = "IRUDEK Bidasoa Irun",
+                        score = null,
+                        status = MatchStatus.NOT_YET_PLAYED,
+                        kickoff = KICKOFF,
+                    ),
                 ),
             ),
             result.getOrThrow(),
@@ -87,7 +94,7 @@ class AsobalScoresRepositoryTest {
 
     @Test
     fun `getCurrentJornadaMatches forwards an explicit jornada to the datasource unchanged`() = runTest {
-        val dataSource = RecordingFakeDataSource(Result.success(emptyList()))
+        val dataSource = RecordingFakeDataSource(Result.success(AsobalJornadaMatches(JORNADA, emptyList())))
         val repository = AsobalScoresRepository(dataSource)
 
         repository.getCurrentJornadaMatches(jornada = JORNADA)
