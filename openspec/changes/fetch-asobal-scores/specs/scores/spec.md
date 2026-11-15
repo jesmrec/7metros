@@ -7,19 +7,27 @@ The scores capability fetches current handball match information (teams, score, 
 ## ADDED Requirements
 
 ### Requirement: Current-jornada Liga Asobal match data is available
-The system SHALL provide match data for the current jornada of Liga Asobal (asobal.es), covering finished, in-progress, and not-yet-played matches. Every match SHALL include both team names and a status; a score SHALL be present for finished and in-progress matches and absent for not-yet-played matches.
+The system SHALL provide match data for the current jornada of Liga Asobal (asobal.es), covering finished, not-yet-played, and in-progress matches, with in-progress matches reported at a finer granularity when the source distinguishes it (first half, half-time, second half, extra time, penalty shootout) and a generic in-progress status otherwise. Every match SHALL include both team names and a status; a score SHALL be present for every in-progress or finished match and absent for not-yet-played matches.
 
 #### Scenario: Finished match has a final score
 - **WHEN** the current jornada includes a match that has already been played
 - **THEN** the returned match data includes both team names, a final score, and a finished status
 
-#### Scenario: In-progress match has a current score
-- **WHEN** the current jornada includes a match that is currently being played
-- **THEN** the returned match data includes both team names, the current (partial) score, and an in-progress status
+#### Scenario: In-progress match in a recognized phase has a current score, phase, and minute
+- **WHEN** the current jornada includes a match currently being played whose source status matches a recognized phase (first half, second half, or extra time)
+- **THEN** the returned match data includes both team names, the current (partial) score, that phase's specific status, and the elapsed match minute
 
-#### Scenario: Not-yet-played match has no score
+#### Scenario: In-progress match at half-time or in a penalty shootout has a current score and phase, with no minute
+- **WHEN** the current jornada includes a match that is at half-time or in a penalty shootout
+- **THEN** the returned match data includes both team names, the current score, that phase's specific status, and no match minute
+
+#### Scenario: In-progress match with an unrecognized phase still reports a generic in-progress status
+- **WHEN** the current jornada includes a match currently being played whose source status text does not match any recognized phase
+- **THEN** the returned match data includes both team names, the current (partial) score, and a generic in-progress status, rather than being dropped or misreported as another state
+
+#### Scenario: Not-yet-played match has no score but has a scheduled kickoff
 - **WHEN** the current jornada includes a match that has not started yet
-- **THEN** the returned match data includes both team names, no score, and a not-yet-played status
+- **THEN** the returned match data includes both team names, no score, a not-yet-played status, and the match's scheduled kickoff date and time
 
 ### Requirement: Scraped team names decode correctly
 Liga Asobal's pages declare conflicting character encodings. The system SHALL decode scraped text so that accented and special characters in team names match the source text exactly, regardless of that inconsistency.
@@ -44,7 +52,7 @@ The system SHALL show the current jornada's matches on screen when the app is op
 
 #### Scenario: Matches are available
 - **WHEN** the app opens and current-jornada matches were fetched successfully
-- **THEN** each match's team names, score (if any), and status are shown on screen
+- **THEN** the jornada number is shown alongside each match's team names, score (if any), status, scheduled kickoff (for not-yet-played matches), and elapsed minute (for in-progress matches that report one)
 
 #### Scenario: No matches are available
 - **WHEN** the app opens and the current jornada has no matches to show
@@ -53,3 +61,18 @@ The system SHALL show the current jornada's matches on screen when the app is op
 #### Scenario: Fetching fails
 - **WHEN** the app opens and fetching current-jornada matches fails
 - **THEN** the screen does not display match data as if the fetch had succeeded
+
+### Requirement: Scores can be refreshed on demand
+The system SHALL let the user manually trigger a re-fetch of the current jornada's matches after the initial load.
+
+#### Scenario: Manual refresh updates the displayed matches
+- **WHEN** the user triggers a manual refresh and the re-fetch succeeds
+- **THEN** the screen updates to show the newly fetched jornada number and matches
+
+#### Scenario: Previously displayed matches remain visible while a manual refresh is in flight
+- **WHEN** the user triggers a manual refresh
+- **THEN** the previously displayed matches remain on screen, with a refreshing indicator, until the re-fetch completes - rather than being replaced by the initial loading state
+
+#### Scenario: A failed manual refresh replaces the displayed matches with a failure indicator
+- **WHEN** the user triggers a manual refresh and the re-fetch fails
+- **THEN** the screen shows the failure indicator in place of the previously displayed matches, the same as an initial failed fetch
