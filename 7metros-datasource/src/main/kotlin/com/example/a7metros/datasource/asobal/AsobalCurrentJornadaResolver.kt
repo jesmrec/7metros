@@ -9,12 +9,10 @@ import java.io.ByteArrayInputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import kotlin.math.abs
 
 private const val ASOBAL_RESULTS_LIST_URL = "https://www.asobal.es/liga/resultados/"
 private const val ASOBAL_RESULTS_BASE_URL = "https://www.asobal.es/liga/resultados"
 private const val ASOBAL_CALENDARIO_BASE_URL = "https://www.asobal.es/liga/calendario"
-private const val MAX_STALE_DAYS = 30L
 
 // asobal.es's pages declare conflicting charsets in duplicate <meta charset> tags.
 // Rather than let Jsoup guess from those (or trust an HTTP header that might be missing
@@ -29,9 +27,6 @@ private val JORNADA_NUMBER_REGEX = Regex("""(\d+)/?$""")
 private val MATCH_DATE_REGEX = Regex("""\d{2}/\d{2}/\d{4}""")
 private val MATCH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
-class StaleJornadaException(jornada: Int) :
-    IllegalStateException("Resolved jornada $jornada's match dates are too far from today to trust")
-
 class AsobalCurrentJornadaResolver(
     private val networkClient: NetworkClient,
     private val today: () -> LocalDate = LocalDate::now,
@@ -44,16 +39,15 @@ class AsobalCurrentJornadaResolver(
 
     // The nav link can point at a jornada whose results page hasn't been populated yet
     // (e.g. between rounds, or during a scheduled break) - that page has zero match
-    // entries, as opposed to one with real-but-too-old entries (handled by
-    // requireFreshJornada instead, since that shape signals a broken resolution).
+    // entries, handled by resolveGapJornada. A non-empty page is trusted as-is: a match
+    // rescheduled far outside its round's normal window (postponed and played weeks
+    // later, or moved earlier) would otherwise make an on-schedule jornada look "stale"
+    // or a not-yet-started one look "populated" from that single outlier date alone, so
+    // staleness is no longer treated as a hard failure - the nav link stays the source
+    // of truth for which jornada is current.
     private suspend fun resolveJornada(jornada: Int): Int {
         val matchDates = extractMatchDates(parseDocument(fetchOrThrow("$ASOBAL_RESULTS_BASE_URL/$jornada/")))
-        return if (matchDates.isNotEmpty()) {
-            requireFreshJornada(matchDates, jornada)
-            jornada
-        } else {
-            resolveGapJornada(jornada)
-        }
+        return if (matchDates.isNotEmpty()) jornada else resolveGapJornada(jornada)
     }
 
     private suspend fun resolveGapJornada(upcomingJornada: Int): Int {
@@ -97,13 +91,6 @@ class AsobalCurrentJornadaResolver(
                 LocalDate.parse(it, MATCH_DATE_FORMAT)
             }
         }
-
-    internal fun requireFreshJornada(matchDates: List<LocalDate>, jornada: Int) {
-        val closestGapInDays = matchDates.minOfOrNull { abs(ChronoUnit.DAYS.between(it, today())) }
-        if (closestGapInDays == null || closestGapInDays > MAX_STALE_DAYS) {
-            throw StaleJornadaException(jornada)
-        }
-    }
 
     // Pure: which neighboring jornada to show when `upcomingJornada`'s results aren't
     // populated yet. Ties, and no earlier jornada to fall back to, favor upcoming;

@@ -93,24 +93,26 @@ class AsobalCurrentJornadaResolverTest {
     }
 
     @Test
-    fun `requireFreshJornada accepts a jornada whose match dates are near today`() {
+    fun `resolve trusts a jornada whose only match was rescheduled far from today`() = runTest {
         val resolver = AsobalCurrentJornadaResolver(
-            networkClient = FakeNetworkClient(emptyMap()),
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(
+                        loadNavLinkFixture().outerHtml().toAsobalBytes(),
+                    ),
+                    // Only one match on this jornada's results page, postponed and played
+                    // weeks after its nominal round - this must not be treated as stale.
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(EXPECTED_CURRENT_JORNADA, "13/09/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
             today = { TODAY_IN_FIXTURE },
         )
 
-        resolver.requireFreshJornada(listOf(TODAY_IN_FIXTURE), EXPECTED_CURRENT_JORNADA)
-    }
+        val result = resolver.resolve()
 
-    @Test(expected = StaleJornadaException::class)
-    fun `requireFreshJornada rejects a jornada whose match dates are far from today`() {
-        val resolver = AsobalCurrentJornadaResolver(
-            networkClient = FakeNetworkClient(emptyMap()),
-            today = { TODAY_IN_FIXTURE },
-        )
-
-        // September matches, 49 days before the November "today" - stale either way.
-        resolver.requireFreshJornada(listOf(LocalDate.parse("2026-09-13")), EXPECTED_CURRENT_JORNADA)
+        assertEquals(EXPECTED_CURRENT_JORNADA, result.getOrThrow())
     }
 
     @Test
