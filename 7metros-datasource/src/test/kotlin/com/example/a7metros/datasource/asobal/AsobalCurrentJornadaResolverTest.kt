@@ -35,17 +35,23 @@ private val NAV_LINK_JORNADA_9_HTML = """
     <html><body><a href="/liga/resultados/9/">Jornada 9</a></body></html>
 """.trimIndent()
 
-private fun resultsHtmlWithDate(jornada: Int, date: String) = """
-    <html><body>
-      <span class="head">Jornada $jornada - $date <span class="date">20:00</span></span>
-    </body></html>
-""".trimIndent()
+private fun resultsHtmlWithDates(jornada: Int, vararg dates: String): String {
+    val spans = dates.joinToString(separator = "\n      ") { date ->
+        """<span class="head">Jornada $jornada - $date <span class="date">20:00</span></span>"""
+    }
+    return "<html><body>\n      $spans\n    </body></html>"
+}
 
-private fun calendarioHtmlWithDate(date: String) = """
-    <html><body>
-      <span class="head">$date - 20:00<span class="date"> ASOBAL TV</span></span>
-    </body></html>
-""".trimIndent()
+private fun resultsHtmlWithDate(jornada: Int, date: String) = resultsHtmlWithDates(jornada, date)
+
+private fun calendarioHtmlWithDates(vararg dates: String): String {
+    val spans = dates.joinToString(separator = "\n      ") { date ->
+        """<span class="head">$date - 20:00<span class="date"> ASOBAL TV</span></span>"""
+    }
+    return "<html><body>\n      $spans\n    </body></html>"
+}
+
+private fun calendarioHtmlWithDate(date: String) = calendarioHtmlWithDates(date)
 
 private class FakeNetworkClient(
     private val responses: Map<String, Result<ByteArray>>,
@@ -93,7 +99,7 @@ class AsobalCurrentJornadaResolverTest {
     }
 
     @Test
-    fun `resolve trusts a jornada whose only match was rescheduled far from today`() = runTest {
+    fun `resolve trusts a jornada whose only match was postponed to weeks after today`() = runTest {
         val resolver = AsobalCurrentJornadaResolver(
             networkClient = FakeNetworkClient(
                 mapOf(
@@ -101,7 +107,32 @@ class AsobalCurrentJornadaResolverTest {
                         loadNavLinkFixture().outerHtml().toAsobalBytes(),
                     ),
                     // Only one match on this jornada's results page, postponed and played
-                    // weeks after its nominal round - this must not be treated as stale.
+                    // weeks after today (its nominal round) - this must not be treated as
+                    // stale just because the date is far in the future.
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(EXPECTED_CURRENT_JORNADA, "15/12/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { TODAY_IN_FIXTURE },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(EXPECTED_CURRENT_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve trusts a jornada whose only match was played weeks before today`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(
+                        loadNavLinkFixture().outerHtml().toAsobalBytes(),
+                    ),
+                    // Only one match on this jornada's results page, played weeks before
+                    // today (its nominal round) - the mirror case of the above: played in
+                    // advance rather than postponed, but equally must not be stale-rejected.
                     "https://www.asobal.es/liga/resultados/8/" to Result.success(
                         resultsHtmlWithDate(EXPECTED_CURRENT_JORNADA, "13/09/2026").toAsobalBytes(),
                     ),
@@ -230,6 +261,66 @@ class AsobalCurrentJornadaResolverTest {
         val result = resolver.resolve()
 
         assertEquals(FINISHED_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve finds the finished jornada's latest match even with an earlier stray`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
+                    // Round 8 mixes one match played weeks in advance (13/09) with the
+                    // rest on their normal date (03/11) - maxOrNull() still picks the
+                    // latter, so the stray doesn't make round 8 look finished sooner than
+                    // it actually was; this direction isn't affected by the limitation
+                    // covered in the test below.
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDates(FINISHED_JORNADA, "13/09/2026", "03/11/2026").toAsobalBytes(),
+                    ),
+                    "https://www.asobal.es/liga/calendario/9/" to Result.success(
+                        calendarioHtmlWithDate("25/11/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { LocalDate.parse("2026-11-05") },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(FINISHED_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve jumps to the upcoming jornada early because of one outlier match date`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(FINISHED_JORNADA, "01/11/2026").toAsobalBytes(),
+                    ),
+                    // Round 9's calendario: one match moved up to two days from today,
+                    // the other two still three weeks out. The lone early date isn't
+                    // representative of when round 9 actually starts, but
+                    // fetchFirstUpcomingMatchDate takes the bare minimum over all of
+                    // them, so the outlier alone decides the comparison below.
+                    "https://www.asobal.es/liga/calendario/9/" to Result.success(
+                        calendarioHtmlWithDates("07/11/2026", "25/11/2026", "25/11/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { LocalDate.parse("2026-11-05") },
+        )
+
+        val result = resolver.resolve()
+
+        // Round 8 finished only 4 days ago and round 9's real bulk doesn't start for 20
+        // more - by that measure round 8 should still show. It flips anyway because of
+        // the one early-scheduled outlier; closing this needs fetchFirstUpcomingMatchDate
+        // to ignore an outlier date rather than take the bare minimum (see design.md).
+        assertEquals(UPCOMING_JORNADA, result.getOrThrow())
     }
 
     @Test
