@@ -62,8 +62,23 @@ The system SHALL show the current jornada's matches on screen when the app is op
 - **WHEN** the app opens and fetching current-jornada matches fails
 - **THEN** the screen does not display match data as if the fetch had succeeded
 
+### Requirement: Any jornada's matches can be viewed, not only the current one
+The system SHALL let the user navigate to the jornada immediately before or after whichever one is currently displayed, re-fetching that specific jornada's matches rather than only ever showing the current one.
+
+#### Scenario: Navigating to the previous jornada
+- **WHEN** the user requests the previous jornada while viewing jornada N
+- **THEN** the screen shows jornada N-1's matches
+
+#### Scenario: Navigating to the next jornada
+- **WHEN** the user requests the next jornada while viewing jornada N
+- **THEN** the screen shows jornada N+1's matches
+
+#### Scenario: A match rescheduled outside its jornada's normal window remains reachable
+- **WHEN** a jornada contains a match that was postponed to after, or played before, the rest of that jornada, and the app's default view has since moved on to a later current jornada
+- **THEN** the user can navigate back to that match's own jornada and see its result once it has been played, rather than it being permanently unreachable
+
 ### Requirement: Scores can be refreshed on demand
-The system SHALL let the user manually trigger a re-fetch of the current jornada's matches after the initial load.
+The system SHALL let the user manually trigger a re-fetch of whichever jornada's matches are currently displayed, after the initial load.
 
 #### Scenario: Manual refresh updates the displayed matches
 - **WHEN** the user triggers a manual refresh and the re-fetch succeeds
