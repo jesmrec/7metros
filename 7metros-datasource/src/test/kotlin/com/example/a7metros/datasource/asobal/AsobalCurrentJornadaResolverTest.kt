@@ -1,0 +1,341 @@
+package com.example.a7metros.datasource.asobal
+
+import com.example.a7metros.network.NetworkClient
+import kotlinx.coroutines.test.runTest
+import org.jsoup.Jsoup
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.IOException
+import java.time.LocalDate
+
+private const val NAV_LINK_FIXTURE_PATH = "fixtures/asobal/nav-link-with-current-jornada.html"
+private const val EXPECTED_CURRENT_JORNADA = 8
+private const val FINISHED_JORNADA = 8
+private const val UPCOMING_JORNADA = 9
+private val TODAY_IN_FIXTURE = LocalDate.parse("2026-11-01")
+
+private val FRESH_RESULTS_HTML = """
+    <html><body>
+      <span class="head">Jornada 8 - 01/11/2026 <span class="date">20:00</span></span>
+    </body></html>
+""".trimIndent()
+
+private val EMPTY_RESULTS_HTML = """
+    <html><body>
+      <div class="info-results"><ul></ul></div>
+    </body></html>
+""".trimIndent()
+
+private val NAV_LINK_JORNADA_1_HTML = """
+    <html><body><a href="/liga/resultados/1/">Jornada 1</a></body></html>
+""".trimIndent()
+
+private val NAV_LINK_JORNADA_9_HTML = """
+    <html><body><a href="/liga/resultados/9/">Jornada 9</a></body></html>
+""".trimIndent()
+
+private fun resultsHtmlWithDates(jornada: Int, vararg dates: String): String {
+    val spans = dates.joinToString(separator = "\n      ") { date ->
+        """<span class="head">Jornada $jornada - $date <span class="date">20:00</span></span>"""
+    }
+    return "<html><body>\n      $spans\n    </body></html>"
+}
+
+private fun resultsHtmlWithDate(jornada: Int, date: String) = resultsHtmlWithDates(jornada, date)
+
+private fun calendarioHtmlWithDates(vararg dates: String): String {
+    val spans = dates.joinToString(separator = "\n      ") { date ->
+        """<span class="head">$date - 20:00<span class="date"> ASOBAL TV</span></span>"""
+    }
+    return "<html><body>\n      $spans\n    </body></html>"
+}
+
+private fun calendarioHtmlWithDate(date: String) = calendarioHtmlWithDates(date)
+
+private class FakeNetworkClient(
+    private val responses: Map<String, Result<ByteArray>>,
+) : NetworkClient {
+    override suspend fun fetch(url: String): Result<ByteArray> =
+        responses[url] ?: error("No fake response configured for $url")
+}
+
+private fun String.toAsobalBytes(): ByteArray = toByteArray(Charsets.ISO_8859_1)
+
+class AsobalCurrentJornadaResolverTest {
+
+    private fun loadNavLinkFixture() =
+        Jsoup.parse(
+            checkNotNull(javaClass.classLoader.getResourceAsStream(NAV_LINK_FIXTURE_PATH)),
+            "iso-8859-1",
+            "https://www.asobal.es/liga/resultados/",
+        )
+
+    @Test
+    fun `resolveJornadaNumber extracts the current jornada from the shared nav link`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val jornada = resolver.resolveJornadaNumber(loadNavLinkFixture())
+
+        assertEquals(EXPECTED_CURRENT_JORNADA, jornada)
+    }
+
+    @Test
+    fun `extractMatchDates parses every match date from the shared head spans`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val dates = resolver.extractMatchDates(Jsoup.parse(FRESH_RESULTS_HTML))
+
+        assertEquals(listOf(LocalDate.parse("2026-11-01")), dates)
+    }
+
+    @Test
+    fun `extractMatchDates returns an empty list when the results page has no match entries`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val dates = resolver.extractMatchDates(Jsoup.parse(EMPTY_RESULTS_HTML))
+
+        assertTrue(dates.isEmpty())
+    }
+
+    @Test
+    fun `resolve trusts a jornada whose only match was postponed to weeks after today`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(
+                        loadNavLinkFixture().outerHtml().toAsobalBytes(),
+                    ),
+                    // Only one match on this jornada's results page, postponed and played
+                    // weeks after today (its nominal round) - this must not be treated as
+                    // stale just because the date is far in the future.
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(EXPECTED_CURRENT_JORNADA, "15/12/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { TODAY_IN_FIXTURE },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(EXPECTED_CURRENT_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve trusts a jornada whose only match was played weeks before today`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(
+                        loadNavLinkFixture().outerHtml().toAsobalBytes(),
+                    ),
+                    // Only one match on this jornada's results page, played weeks before
+                    // today (its nominal round) - the mirror case of the above: played in
+                    // advance rather than postponed, but equally must not be stale-rejected.
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(EXPECTED_CURRENT_JORNADA, "13/09/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { TODAY_IN_FIXTURE },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(EXPECTED_CURRENT_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `decideGapJornada favors the finished jornada when it ended more recently than the upcoming one starts`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val resolved = resolver.decideGapJornada(
+            previousJornada = FINISHED_JORNADA,
+            previousLastMatchDate = LocalDate.parse("2026-11-03"),
+            upcomingJornada = UPCOMING_JORNADA,
+            upcomingFirstMatchDate = LocalDate.parse("2026-11-15"),
+            today = LocalDate.parse("2026-11-05"),
+        )
+
+        assertEquals(FINISHED_JORNADA, resolved)
+    }
+
+    @Test
+    fun `decideGapJornada favors the upcoming jornada when it starts sooner than the finished one ended`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val resolved = resolver.decideGapJornada(
+            previousJornada = FINISHED_JORNADA,
+            previousLastMatchDate = LocalDate.parse("2026-11-02"),
+            upcomingJornada = UPCOMING_JORNADA,
+            upcomingFirstMatchDate = LocalDate.parse("2026-11-07"),
+            today = LocalDate.parse("2026-11-05"),
+        )
+
+        assertEquals(UPCOMING_JORNADA, resolved)
+    }
+
+    @Test
+    fun `decideGapJornada favors the upcoming jornada on a tie`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val resolved = resolver.decideGapJornada(
+            previousJornada = FINISHED_JORNADA,
+            previousLastMatchDate = LocalDate.parse("2026-10-31"),
+            upcomingJornada = UPCOMING_JORNADA,
+            upcomingFirstMatchDate = LocalDate.parse("2026-11-10"),
+            today = LocalDate.parse("2026-11-05"),
+        )
+
+        assertEquals(UPCOMING_JORNADA, resolved)
+    }
+
+    @Test
+    fun `decideGapJornada favors the finished jornada when the upcoming one's date is undeterminable`() {
+        val resolver = AsobalCurrentJornadaResolver(networkClient = FakeNetworkClient(emptyMap()))
+
+        val resolved = resolver.decideGapJornada(
+            previousJornada = FINISHED_JORNADA,
+            previousLastMatchDate = LocalDate.parse("2026-11-03"),
+            upcomingJornada = UPCOMING_JORNADA,
+            upcomingFirstMatchDate = null,
+            today = LocalDate.parse("2026-11-05"),
+        )
+
+        assertEquals(FINISHED_JORNADA, resolved)
+    }
+
+    @Test
+    fun `resolve fetches the nav link page then the resolved jornada's results page`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(
+                        loadNavLinkFixture().outerHtml().toAsobalBytes(),
+                    ),
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(FRESH_RESULTS_HTML.toAsobalBytes()),
+                ),
+            ),
+            today = { TODAY_IN_FIXTURE },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(EXPECTED_CURRENT_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve surfaces a failure when the nav link page cannot be fetched`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.failure(IOException("unreachable")),
+                ),
+            ),
+        )
+
+        val result = resolver.resolve()
+
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun `resolve falls back to the finished jornada when the upcoming one has no results yet`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(FINISHED_JORNADA, "03/11/2026").toAsobalBytes(),
+                    ),
+                    "https://www.asobal.es/liga/calendario/9/" to Result.success(
+                        calendarioHtmlWithDate("15/11/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { LocalDate.parse("2026-11-05") },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(FINISHED_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve finds the finished jornada's latest match even with an earlier stray`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
+                    // Round 8 mixes one match played weeks in advance (13/09) with the
+                    // rest on their normal date (03/11) - maxOrNull() still picks the
+                    // latter, so the stray doesn't make round 8 look finished sooner than
+                    // it actually was; this direction isn't affected by the limitation
+                    // covered in the test below.
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDates(FINISHED_JORNADA, "13/09/2026", "03/11/2026").toAsobalBytes(),
+                    ),
+                    "https://www.asobal.es/liga/calendario/9/" to Result.success(
+                        calendarioHtmlWithDate("25/11/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { LocalDate.parse("2026-11-05") },
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(FINISHED_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve jumps to the upcoming jornada early because of one outlier match date`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_9_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/9/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/8/" to Result.success(
+                        resultsHtmlWithDate(FINISHED_JORNADA, "01/11/2026").toAsobalBytes(),
+                    ),
+                    // Round 9's calendario: one match moved up to two days from today,
+                    // the other two still three weeks out. The lone early date isn't
+                    // representative of when round 9 actually starts, but
+                    // fetchFirstUpcomingMatchDate takes the bare minimum over all of
+                    // them, so the outlier alone decides the comparison below.
+                    "https://www.asobal.es/liga/calendario/9/" to Result.success(
+                        calendarioHtmlWithDates("07/11/2026", "25/11/2026", "25/11/2026").toAsobalBytes(),
+                    ),
+                ),
+            ),
+            today = { LocalDate.parse("2026-11-05") },
+        )
+
+        val result = resolver.resolve()
+
+        // Round 8 finished only 4 days ago and round 9's real bulk doesn't start for 20
+        // more - by that measure round 8 should still show. It flips anyway because of
+        // the one early-scheduled outlier; closing this needs fetchFirstUpcomingMatchDate
+        // to ignore an outlier date rather than take the bare minimum (see design.md).
+        assertEquals(UPCOMING_JORNADA, result.getOrThrow())
+    }
+
+    @Test
+    fun `resolve returns jornada 1 directly when its results are empty and there is no earlier jornada`() = runTest {
+        val resolver = AsobalCurrentJornadaResolver(
+            networkClient = FakeNetworkClient(
+                mapOf(
+                    "https://www.asobal.es/liga/resultados/" to Result.success(NAV_LINK_JORNADA_1_HTML.toAsobalBytes()),
+                    "https://www.asobal.es/liga/resultados/1/" to Result.success(EMPTY_RESULTS_HTML.toAsobalBytes()),
+                ),
+            ),
+        )
+
+        val result = resolver.resolve()
+
+        assertEquals(1, result.getOrThrow())
+    }
+}

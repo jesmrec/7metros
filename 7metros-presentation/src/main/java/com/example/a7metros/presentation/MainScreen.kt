@@ -1,10 +1,17 @@
 package com.example.a7metros.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Star
@@ -25,8 +32,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,17 +43,39 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.a7metros.domain.Match
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private enum class BottomBarTab(val label: String) {
     Resultados("Resultados"),
     Clasificacion("Clasificación"),
 }
 
+@Composable
+fun MainScreen(scoresViewModel: ScoresViewModel) {
+    val uiState by scoresViewModel.uiState.collectAsState()
+    val isRefreshing by scoresViewModel.isRefreshing.collectAsState()
+    MainScreen(
+        uiState = uiState,
+        isRefreshing = isRefreshing,
+        onRefresh = scoresViewModel::refresh,
+        onPreviousJornada = scoresViewModel::showPreviousJornada,
+        onNextJornada = scoresViewModel::showNextJornada,
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    uiState: ScoresUiState,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
+    onPreviousJornada: () -> Unit = {},
+    onNextJornada: () -> Unit = {},
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedTab by rememberSaveable { mutableStateOf(BottomBarTab.Resultados) }
@@ -66,9 +97,89 @@ fun MainScreen() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-            ) {}
+            ) {
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    ScoresContent(
+                        uiState = uiState,
+                        onPreviousJornada = onPreviousJornada,
+                        onNextJornada = onNextJornada,
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun ScoresContent(
+    uiState: ScoresUiState,
+    onPreviousJornada: () -> Unit = {},
+    onNextJornada: () -> Unit = {},
+) {
+    when (uiState) {
+        is ScoresUiState.Loading -> Text(
+            text = "Cargando resultados…",
+            modifier = Modifier.padding(16.dp),
+        )
+        is ScoresUiState.Matches -> Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
+            JornadaHeader(uiState.jornada, onPreviousJornada, onNextJornada)
+            uiState.matches.forEach { match -> MatchRow(match) }
+        }
+        is ScoresUiState.Empty -> Column(modifier = Modifier.padding(16.dp)) {
+            JornadaHeader(uiState.jornada, onPreviousJornada, onNextJornada)
+            Text(text = "No hay partidos disponibles")
+        }
+        is ScoresUiState.Failure -> Text(
+            text = "No se han podido cargar los resultados",
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@Composable
+private fun JornadaHeader(jornada: Int, onPreviousJornada: () -> Unit, onNextJornada: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        IconButton(onClick = onPreviousJornada) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Jornada anterior")
+        }
+        Text(
+            text = "Jornada $jornada",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        IconButton(onClick = onNextJornada) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Jornada siguiente")
+        }
+    }
+}
+
+private val KICKOFF_FORMAT = DateTimeFormatter.ofPattern("EEE dd/MM HH:mm", Locale.forLanguageTag("es-ES"))
+
+@Composable
+private fun MatchRow(match: Match) {
+    val scoreText = match.score?.let { "${it.home} - ${it.away}" } ?: "- : -"
+    val statusText = when {
+        match.minute != null -> "${match.status} (${match.minute}')"
+        match.kickoff != null -> "${match.status} (${KICKOFF_FORMAT.format(match.kickoff)})"
+        else -> "${match.status}"
+    }
+    Text(
+        text = "${match.homeTeam} $scoreText ${match.awayTeam} ($statusText)",
+        modifier = Modifier.padding(vertical = 4.dp),
+    )
 }
 
 @Composable
